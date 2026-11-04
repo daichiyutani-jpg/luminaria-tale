@@ -21,27 +21,27 @@ const list: TrainerDef[] = [
   {
     id: 'rival1', name: 'カイト', title: 'ライバル', party: [{ speciesId: '__rival_starter', level: 4 }], reward: 300,
     intro: 'せっかくだし、オレと勝負しようぜ！ どっちの灯が明るいか、たしかめてやる！',
-    defeat: 'ちぇっ、負けたか……。でも、次はぜったい負けないからな！', loseOk: true, smart: 0.5,
+    defeat: 'ちぇっ、負けたか……。でも、次はぜったい負けないからな！', loseOk: true, smart: 0.3,
   },
   {
     id: 'yu', name: 'ユウ', title: '見習い灯守', party: [{ speciesId: 'piricchi', level: 3 }, { speciesId: 'kazamidori', level: 3 }], reward: 260,
-    intro: '目が合ったら勝負！ それが灯守のルールだよ！', defeat: 'うわー、強いなあ！', smart: 0.5,
+    intro: '目が合ったら勝負！ それが灯守のルールだよ！', defeat: 'うわー、強いなあ！', smart: 0.4,
   },
   {
-    id: 'mio', name: 'ミオ', title: '花屋', party: [{ speciesId: 'fuwamo', level: 6 }, { speciesId: 'mebukin', level: 7 }], reward: 340,
-    intro: 'お花のように かわいい子たちの実力、見せてあげる！', defeat: 'あらあら、しおれちゃった。', smart: 0.6,
+    id: 'mio', name: 'ミオ', title: '花屋', party: [{ speciesId: 'fuwamo', level: 5 }, { speciesId: 'mebukin', level: 6 }], reward: 340,
+    intro: 'お花のように かわいい子たちの実力、見せてあげる！', defeat: 'あらあら、しおれちゃった。', smart: 0.5,
   },
   {
-    id: 'gen', name: 'ゲン', title: '釣り人', party: [{ speciesId: 'shizukun', level: 7 }, { speciesId: 'koishimo', level: 7 }], reward: 380,
-    intro: '釣りの合間に ひと勝負といこうか。', defeat: '大物を逃した気分だ……。', smart: 0.6,
+    id: 'gen', name: 'ゲン', title: '釣り人', party: [{ speciesId: 'shizukun', level: 6 }, { speciesId: 'koishimo', level: 6 }], reward: 380,
+    intro: '釣りの合間に ひと勝負といこうか。', defeat: '大物を逃した気分だ……。', smart: 0.5,
   },
   {
-    id: 'grunt1', name: 'したっぱ', title: '静夜団', party: [{ speciesId: 'yoiyami', level: 9 }, { speciesId: 'koishimo', level: 10 }], reward: 520,
-    intro: '静夜団の じゃまを するな！ 灯なんて 消えてしまえば いいんだ！', defeat: 'くっ……ヨル様に 報告しなければ……。', smart: 0.7,
+    id: 'grunt1', name: 'したっぱ', title: '静夜団', party: [{ speciesId: 'yoiyami', level: 8 }, { speciesId: 'koishimo', level: 9 }], reward: 520,
+    intro: '静夜団の じゃまを するな！ 灯なんて 消えてしまえば いいんだ！', defeat: 'くっ……ヨル様に 報告しなければ……。', smart: 0.6,
   },
   {
-    id: 'grunt2', name: 'したっぱ', title: '静夜団', party: [{ speciesId: 'piricchi', level: 10 }, { speciesId: 'yoiyami', level: 11 }], reward: 560,
-    intro: 'この灯籠柱には さわらせないよ！', defeat: 'ああ、灯がともってしまう……！', smart: 0.7,
+    id: 'grunt2', name: 'したっぱ', title: '静夜団', party: [{ speciesId: 'piricchi', level: 9 }, { speciesId: 'yoiyami', level: 10 }], reward: 560,
+    intro: 'この灯籠柱には さわらせないよ！', defeat: 'ああ、灯がともってしまう……！', smart: 0.6,
   },
 ];
 

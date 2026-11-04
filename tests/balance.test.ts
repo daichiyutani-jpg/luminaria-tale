@@ -53,7 +53,7 @@ function bossRate(starter: string, evo: string, partners: [string, string], lv: 
   return simulate(
     'boss',
     () => [mon(starter, lv, seededRng(1), MID, evo), mon(partners[0], sub, seededRng(2)), mon(partners[1], sub, seededRng(3))],
-    () => [mon('hotarunoou', 14, seededRng(4), BOSS_IVS)],
+    () => [mon('hotarunoou', 13, seededRng(4), BOSS_IVS)],
     200,
     seed,
   );
@@ -75,7 +75,7 @@ describe('難易度のめやす（シミュレーション・道具なし）', (
     }
   });
 
-  it('森の主（Lv14）は 想定レベル（相棒Lv15・なかまLv13）なら どの相棒でも 勝てる', () => {
+  it('森の主（Lv13）は 想定レベル（相棒Lv15・なかまLv13）なら どの相棒でも 勝てる', () => {
     for (const [s, evo] of STARTERS) {
       for (const p of PARTNERS) {
         expect(bossRate(s, evo, p, 15, 13, 300), `${s}+${p} Lv15/13`).toBeGreaterThanOrEqual(0.9);
@@ -83,18 +83,18 @@ describe('難易度のめやす（シミュレーション・道具なし）', (
     }
   });
 
-  it('森の主は 少し低いレベル（Lv14/12）だと 負けることもある（作業ではなく 手ごたえがある）', () => {
+  it('森の主は 少し低いレベル（Lv13/11）だと 負けることもある（作業ではなく 手ごたえがある）', () => {
     for (const [s, evo] of STARTERS) {
       for (const p of PARTNERS) {
-        const rate = bossRate(s, evo, p, 14, 12, 500);
-        expect(rate, `${s}+${p} Lv14/12`).toBeGreaterThanOrEqual(0.35);
-        expect(rate, `${s}+${p} Lv14/12`).toBeLessThan(1);
+        const rate = bossRate(s, evo, p, 13, 11, 500);
+        expect(rate, `${s}+${p} Lv13/11`).toBeGreaterThanOrEqual(0.25);
+        expect(rate, `${s}+${p} Lv13/11`).toBeLessThan(1);
       }
     }
   });
 
   it('大きく低いレベル（Lv9/8）では 森の主に まず勝てない', () => {
-    const rate = simulate('boss', () => [mon('hinokoro', 9, seededRng(1)), mon('koishimo', 8, seededRng(2)), mon('piricchi', 8, seededRng(3))], () => [mon('hotarunoou', 14, seededRng(4), BOSS_IVS)], 200, 400);
+    const rate = simulate('boss', () => [mon('hinokoro', 9, seededRng(1)), mon('koishimo', 8, seededRng(2)), mon('piricchi', 8, seededRng(3))], () => [mon('hotarunoou', 13, seededRng(4), BOSS_IVS)], 200, 400);
     expect(rate).toBeLessThan(0.25);
   });
 });

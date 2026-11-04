@@ -315,11 +315,10 @@ const grassland: MapDef = {
   encounters: {
     rate: 11,
     table: [
-      { speciesId: 'piricchi', weight: 32, minLevel: 3, maxLevel: 6 },
-      { speciesId: 'kazamidori', weight: 28, minLevel: 3, maxLevel: 6 },
-      { speciesId: 'koishimo', weight: 20, minLevel: 4, maxLevel: 7 },
-      { speciesId: 'fuwamo', weight: 16, minLevel: 4, maxLevel: 6 },
-      { speciesId: 'hinokoro', weight: 4, minLevel: 5, maxLevel: 7 },
+      { speciesId: 'piricchi', weight: 34, minLevel: 2, maxLevel: 5 },
+      { speciesId: 'kazamidori', weight: 30, minLevel: 2, maxLevel: 5 },
+      { speciesId: 'koishimo', weight: 20, minLevel: 3, maxLevel: 5 },
+      { speciesId: 'fuwamo', weight: 16, minLevel: 3, maxLevel: 5 },
     ],
   },
   npcs: [
@@ -412,13 +411,11 @@ const forest: MapDef = {
   encounters: {
     rate: 12,
     table: [
-      { speciesId: 'yoiyami', weight: 32, minLevel: 8, maxLevel: 11 },
-      { speciesId: 'mebukin', weight: 16, minLevel: 8, maxLevel: 10 },
-      { speciesId: 'fuwamo', weight: 14, minLevel: 8, maxLevel: 10 },
-      { speciesId: 'piricchi', weight: 14, minLevel: 9, maxLevel: 11 },
-      { speciesId: 'koishimo', weight: 12, minLevel: 9, maxLevel: 11 },
-      { speciesId: 'shizukun', weight: 8, minLevel: 8, maxLevel: 10 },
-      { speciesId: 'kazamidori', weight: 4, minLevel: 9, maxLevel: 11 },
+      { speciesId: 'yoiyami', weight: 36, minLevel: 7, maxLevel: 10 },
+      { speciesId: 'fuwamo', weight: 22, minLevel: 7, maxLevel: 9 },
+      { speciesId: 'piricchi', weight: 20, minLevel: 7, maxLevel: 10 },
+      { speciesId: 'koishimo', weight: 16, minLevel: 8, maxLevel: 10 },
+      { speciesId: 'kazamidori', weight: 6, minLevel: 8, maxLevel: 10 },
     ],
   },
   npcs: [

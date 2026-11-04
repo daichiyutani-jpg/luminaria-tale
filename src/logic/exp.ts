@@ -22,5 +22,6 @@ export function levelForExp(exp: number): number {
 export function expYield(baseExp: number, enemyLevel: number, myLevel: number, trainer: boolean): number {
   const raw = (baseExp * enemyLevel) / 5;
   const ratio = Math.min(1.5, Math.max(0.35, (enemyLevel + 4) / (myLevel + 4)));
-  return Math.max(1, Math.floor(raw * ratio * (trainer ? 1.4 : 1)));
+  // 2026-11-05：レベル上げを少し楽に（全体 1.25 倍）
+  return Math.max(1, Math.floor(raw * ratio * (trainer ? 1.4 : 1) * 1.25));
 }

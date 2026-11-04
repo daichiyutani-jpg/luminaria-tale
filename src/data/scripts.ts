@@ -13,6 +13,8 @@ export type Cmd =
   | { money: number }
   | { heal: true; respawn?: boolean }
   | { chooseStarter: true }
+  /** まだ持っていない「最初の3匹」を1匹もらう（野生には出ない。ボス・ジムの報酬） */
+  | { giftStarter: number; who?: string }
   | { trainer: string; win?: Cmd[]; lose?: Cmd[] }
   | { boss: { speciesId: string; level: number }; win?: Cmd[]; lose?: Cmd[] }
   /** 伝説の灯獣：捕まえられる・逃げられる戦い */
@@ -186,7 +188,7 @@ export const SCRIPTS: Record<string, Cmd[]> = {
     { say: '黒霞を まとった 巨大な灯獣が 泉の前で うなっている……！' },
     { who: 'ホタルノオウ', say: 'グルルル……ヒカリ……カエセ……！' },
     {
-      boss: { speciesId: 'hotarunoou', level: 14 },
+      boss: { speciesId: 'hotarunoou', level: 13 },
       win: [
         { say: 'ホタルノオウから 黒霞が すうっと 晴れていく……。' },
         { who: 'ホタルノオウ', say: '……ありがとう、小さき灯守よ。わたしは 灯を 奪われかけていた。' },
@@ -194,6 +196,9 @@ export const SCRIPTS: Record<string, Cmd[]> = {
         { who: 'ホタルノオウ', say: 'これを 持っていきなさい。わたしの灯の ひとかけらだ。' },
         { give: ['firefly_wing', 1] },
         { setFlag: 'boss1_down' },
+        { who: 'ホタルノオウ', say: 'それから……黒霞から 守るため、この泉で 1匹の 灯獣の子を あずかっていた。' },
+        { who: 'ホタルノオウ', say: 'その子は おまえに ついていきたいと 言っている。つれていって やってくれ。' },
+        { giftStarter: 12, who: 'ホタルノオウ' },
         { who: 'ホタルノオウ', say: 'ソラネという 人間に 伝えておくれ。夜明けの獣が 目をさます前に、灯を 守れと。' },
       ],
     },
@@ -218,3 +223,10 @@ export const SCRIPTS: Record<string, Cmd[]> = {
 };
 
 Object.assign(SCRIPTS, WORLD_SCRIPTS);
+
+/** ジム3（しおさい港）に初めて勝った時：3匹目の「最初の灯獣」 */
+SCRIPTS.gift_starter_gym3 = [
+  { who: 'ナギサ', say: 'それと……嵐の夜に 港へ 流れついた 灯獣の子が いてね。' },
+  { who: 'ナギサ', say: 'ずっと 強い灯守を 待っていたみたい。あなたに まかせるよ。' },
+  { giftStarter: 20, who: 'ナギサ' },
+];

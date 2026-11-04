@@ -8,8 +8,8 @@ import { checkCondition } from '../data/conditions';
 import { getItem } from '../data/items';
 import { SCRIPTS, type Cmd } from '../data/scripts';
 import { getSpecies, STARTERS } from '../data/species';
-import { addItem, addMoney, giveNewMonster } from '../logic/game';
-import { healFully } from '../logic/monster';
+import { addItem, addMoney, addMonster, giveNewMonster } from '../logic/game';
+import { createMonster, healFully, issueUid } from '../logic/monster';
 import { mathRng } from '../logic/rng';
 import { choose, confirm, say } from './dialog';
 import { h, uiRoot } from './dom';
@@ -104,8 +104,28 @@ async function runCmds(cmds: Cmd[], host: ScriptHost): Promise<boolean> {
       if (!(await host.gymBattle(c.gym))) return false;
     } else if ('travel' in c) await host.travel();
     else if ('ending' in c) await host.ending();
+    else if ('giftStarter' in c) await giftStarter(c.giftStarter, c.who);
   }
   return true;
+}
+
+/** まだ持っていない「最初の3匹」を1匹もらう。3匹とも持っていれば何もしない */
+async function giftStarter(level: number, who?: string): Promise<void> {
+  const save = session.data;
+  const id = STARTERS.find((sp) => !save.flags[`starter_${sp}`] && !save.flags[`gift_${sp}`]);
+  if (!id) return;
+  const sp = getSpecies(id);
+  const mon = createMonster(id, level, mathRng, { uid: issueUid(save), caughtAt: who ? `${who}から` : 'もらった' });
+  const where = addMonster(save, mon);
+  if (where === 'full') {
+    await say('ボックスが いっぱいで 受けとれなかった……。');
+    return;
+  }
+  save.flags[`gift_${id}`] = true;
+  audio.se('catch');
+  const note = where === 'box' ? '\n（パーティーが いっぱいなので ボックスへ 送った）' : '';
+  await say(`${sp.name}（Lv${level}）が なかまに なった！${note}`);
+  session.checkQuests();
 }
 
 /** 最初の相棒を選ぶ */
@@ -139,7 +159,7 @@ function chooseStarter(): Promise<void> {
         ),
       );
     }
-    body.append(h('p', { class: 'note', style: 'color:#ddd' }, 'ほむらは めぶきに、めぶきは しおに、しおは ほむらに 強い。3匹は おたがいに 得意・苦手が あります。ほかの2匹も 島のどこかで 出会えるかも。'));
+    body.append(h('p', { class: 'note', style: 'color:#ddd' }, 'ほむらは めぶきに、めぶきは しおに、しおは ほむらに 強い。3匹は おたがいに 得意・苦手が あります。ほかの2匹とは、旅の とちゅうの できごとで 出会えるかも。'));
     uiRoot().append(wrap);
   });
 }

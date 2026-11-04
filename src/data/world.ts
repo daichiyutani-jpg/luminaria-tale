@@ -200,7 +200,7 @@ function makeRoute(r: RouteSpec): MapDef {
 
   const npcs: NpcDef[] = r.trainers.map((t, i) => {
     const [x, y, facing] = tPos[i];
-    WORLD_TRAINERS.push({ id: t.id, name: t.name, title: t.title, party: t.party.map(([speciesId, level]) => ({ speciesId, level })), reward: Math.max(...t.party.map((p) => p[1])) * 60, intro: t.intro, defeat: t.defeat, smart: 0.7 });
+    WORLD_TRAINERS.push({ id: t.id, name: t.name, title: t.title, party: t.party.map(([speciesId, level]) => ({ speciesId, level })), reward: Math.max(...t.party.map((p) => p[1])) * 60, intro: t.intro, defeat: t.defeat, smart: Math.min(0.7, 0.45 + 0.05 * r.seed) });
     WORLD_SCRIPTS[`${t.id}_after`] = [{ who: t.name, say: t.after }];
     return { id: `npc_${t.id}`, name: `${t.title}の${t.name}`, x, y, facing, look: t.look, trainerId: t.id, sight: 3, talk: [{ if: { defeated: t.id }, script: `${t.id}_after` }, { script: 'trainer_generic' }] };
   });
@@ -311,7 +311,7 @@ function gymMap(t: { n: number; townId: string; townName: string; element: Eleme
   t.trainers.forEach((tr, i) => {
     const tid = `gym${t.n}_t${i + 1}`;
     const [x, y, facing] = pos[i];
-    WORLD_TRAINERS.push({ id: tid, name: tr.name, title: tr.title, party: tr.party.map(([speciesId, level]) => ({ speciesId, level })), reward: Math.max(...tr.party.map((p) => p[1])) * 70, intro: `${t.leader}さんに 挑むなら、まず わたしを たおしてから！`, defeat: 'リーダーは もっと強いよ……！', smart: 0.75 });
+    WORLD_TRAINERS.push({ id: tid, name: tr.name, title: tr.title, party: tr.party.map(([speciesId, level]) => ({ speciesId, level })), reward: Math.max(...tr.party.map((p) => p[1])) * 70, intro: `${t.leader}さんに 挑むなら、まず わたしを たおしてから！`, defeat: 'リーダーは もっと強いよ……！', smart: Math.min(0.75, 0.5 + 0.05 * t.n) });
     WORLD_SCRIPTS[`${tid}_after`] = [{ who: tr.name, say: `${t.leader}さんは ${ELEMENT_NAME[t.element]}の 使い手。弱点を つく灯獣を 連れていこう。` }];
     npcs.push({ id: `npc_${tid}`, name: `${tr.title}の${tr.name}`, x, y, facing, look: tr.look, trainerId: tid, sight: 3, talk: [{ if: { defeated: tid }, script: `${tid}_after` }, { script: 'trainer_generic' }] });
   });
@@ -352,7 +352,7 @@ function gymScripts(t: { n: number; leader: string; intro: string; defeat: strin
 /** ジムのデータ（リーダー・灯章・報酬）を登録する */
 function registerGym(t: TownSpec | (Omit<TownSpec, 'id' | 'name' | 'palette' | 'townsfolk' | 'south'> & { id: string; name: string }), next: string): void {
   WORLD_TRAINERS.push(
-    { id: `gym${t.n}`, name: t.leader, title: t.leaderTitle, party: t.team.map(([speciesId, level]) => ({ speciesId, level })), reward: Math.max(...t.team.map((p) => p[1])) * 100, intro: t.intro, defeat: t.defeat, bgm: 'boss', smart: 0.85 },
+    { id: `gym${t.n}`, name: t.leader, title: t.leaderTitle, party: t.team.map(([speciesId, level]) => ({ speciesId, level })), reward: Math.max(...t.team.map((p) => p[1])) * 100, intro: t.intro, defeat: t.defeat, bgm: 'boss', smart: Math.min(0.85, 0.55 + 0.05 * t.n) },
     { id: `gym${t.n}_r`, name: t.leader, title: `${t.leaderTitle}（本気）`, party: t.rematch.map(([speciesId, level]) => ({ speciesId, level })), reward: Math.max(...t.rematch.map((p) => p[1])) * 120, intro: 'ここからは 本気の勝負だ。トコヨノヤミを 鎮めた 灯守の力、見せてもらう！', defeat: 'まいった。きみこそ ほんとうの 灯守だ。', bgm: 'boss', smart: 0.95 },
   );
   GYMS.push({
@@ -475,7 +475,7 @@ const TOWNS: (Omit<TownSpec, 'south' | 'north' | 'n'> & { route: Omit<RouteSpec,
     ],
     route: {
       id: 'shiokaze_road', name: 'しおかぜ街道', seed: 3, palette: P.shio, min: 17, max: 21, chest: ['revive_shard', 1], hidden: ['super_potion', 2],
-      table: [['pukuri', 22], ['pururu', 18], ['shiogame', 14], ['unari', 14], ['hoshiuo', 12], ['katatsumu', 12], ['shizukun', 8]],
+      table: [['pukuri', 22], ['pururu', 18], ['shiogame', 14], ['unari', 14], ['hoshiuo', 12], ['katatsumu', 20]],
       sign: 'しおかぜ街道\n北：しおさい港\n南：こもれび町',
       trainers: [
         { id: 'r3_taro', name: 'タロウ', title: '釣り人', look: person('#4f7a8f', '#444444'), party: [['pukuri', 18], ['unari', 19]], intro: '大物の 灯獣で 勝負だ！', defeat: 'にがした魚は 大きかった……。', after: 'プクリは 進化すると キバの するどい魚になる。' },
@@ -497,7 +497,7 @@ const TOWNS: (Omit<TownSpec, 'south' | 'north' | 'n'> & { route: Omit<RouteSpec,
     ],
     route: {
       id: 'yukemuri_pass', name: 'ゆけむり峠', seed: 4, palette: P.yuke, min: 22, max: 26, chest: ['sun_lantern', 1], hidden: ['revive_shard', 1],
-      table: [['hibanadori', 20], ['kakougan', 18], ['boyari', 16], ['koroiwa', 16], ['koishimo', 10], ['hinokoro', 8], ['okibi', 6]],
+      table: [['hibanadori', 20], ['kakougan', 18], ['boyari', 16], ['koroiwa', 16], ['koishimo', 14], ['okibi', 10]],
       sign: 'ゆけむり峠\n北：ゆのか温泉郷\n南：しおさい港',
       trainers: [
         { id: 'r4_goro', name: 'ゴロウ', title: '山男', look: person('#7a5a3a', '#2a2a2a'), party: [['koroiwa', 23], ['kakougan', 24]], intro: '峠を こえたければ おれを こえていけ！', defeat: 'まいった！ 道を ゆずろう。', after: 'コロイワは 進化すると 山のように 大きくなるぞ。' },

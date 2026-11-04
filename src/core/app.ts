@@ -522,6 +522,7 @@ class App implements FieldHost {
       } else {
         await say(`（灯章 ${count} / ${GYMS.length}）`);
       }
+      if (n === 3) await runScript('gift_starter_gym3', host);
       await runScript(`gym${n}_after`, host);
       session.checkQuests();
       void session.autosave('gym');

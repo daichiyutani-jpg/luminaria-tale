@@ -5,7 +5,7 @@ import { checkCondition } from '../src/data/conditions';
 import { MAPS, isWalkableTile, tileAt } from '../src/data/maps';
 import { MOVES } from '../src/data/moves';
 import { SCRIPTS, type Cmd } from '../src/data/scripts';
-import { SPECIES, SPECIES_LIST } from '../src/data/species';
+import { SPECIES, SPECIES_LIST, STARTERS } from '../src/data/species';
 import { TRAINERS } from '../src/data/trainers';
 import { GYMS, TRAVEL_TOWNS } from '../src/data/world';
 import { ITEMS } from '../src/data/items';
@@ -474,5 +474,37 @@ describe('10の町・ジム・ボス（2026-11-05）', () => {
   });
   it('トレーナーの灯獣・技・進化先がすべて存在する', () => {
     for (const t of Object.values(TRAINERS)) for (const p of t.party) if (p.speciesId !== '__rival_starter') expect(SPECIES[p.speciesId], `${t.id}: ${p.speciesId}`).toBeTruthy();
+  });
+});
+
+describe('最初の3匹とレベル上げ（2026-11-05 調整）', () => {
+  const lineOf = (id: string): string[] => {
+    const out = [id];
+    for (let i = 0; i < out.length; i++) for (const e of SPECIES[out[i]].evolutions ?? []) out.push(e.to);
+    return out;
+  };
+  const starterLines = new Set(STARTERS.flatMap(lineOf));
+
+  it('最初の3匹（進化後も）は 野生に出ない', () => {
+    for (const m of Object.values(MAPS)) {
+      for (const e of m.encounters?.table ?? []) expect(starterLines.has(e.speciesId), `${m.id}: ${e.speciesId}`).toBe(false);
+    }
+  });
+
+  it('残りの2匹は 森の主とジム3の 報酬で もらえる', () => {
+    const flat = (cmds: Cmd[]): Cmd[] => cmds.flatMap((c) => [c, ...('win' in c && c.win ? flat(c.win) : [])]);
+    const gifts = Object.values(SCRIPTS).flatMap(flat).filter((c) => 'giftStarter' in c);
+    expect(gifts.length).toBe(2);
+    expect(flat(SCRIPTS.gift_starter_gym3).some((c) => 'giftStarter' in c)).toBe(true);
+  });
+
+  it('経験値は 以前の 1.25倍（下げすぎない）', () => {
+    expect(expYield(60, 10, 10, false)).toBe(Math.floor(((60 * 10) / 5) * 1.25));
+    // 同じレベルの野生を倒して 1レベル上げるのに必要な数：Lv5 で約1体・Lv15 で約2.6体・Lv30 で約5体（以前の約8割）
+    const kills = (lv: number) => (expForLevel(lv + 1) - expForLevel(lv)) / expYield(60, lv, lv, false);
+    expect(kills(15)).toBeGreaterThan(2);
+    expect(kills(15)).toBeLessThan(3.2);
+    expect(kills(30)).toBeGreaterThan(4);
+    expect(kills(30)).toBeLessThan(6.2);
   });
 });
