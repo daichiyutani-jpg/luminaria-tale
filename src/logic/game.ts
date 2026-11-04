@@ -10,7 +10,7 @@ import { createMonster, issueUid } from './monster';
 import type { Rng } from './rng';
 
 export const SAVE_VERSION = 1;
-export const PARTY_MAX = 3;
+export const PARTY_MAX = 6;
 export const BOX_MAX = 300;
 export const ITEM_MAX = 99;
 export const MONEY_MAX = 9_999_999;

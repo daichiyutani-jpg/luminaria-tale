@@ -391,15 +391,15 @@ describe('捕獲', () => {
 });
 
 describe('パーティー・道具・クエスト', () => {
-  it('パーティーは3体まで、超えたらボックスへ', () => {
+  it('パーティーは6体まで、超えたらボックスへ', () => {
     const save = newGame(1, 'テスト');
-    for (const sp of ['hinokoro', 'piricchi', 'koishimo', 'fuwamo']) giveNewMonster(save, sp, 5, seededRng(1), 'test');
-    expect(save.party).toHaveLength(3);
+    const ids = ['hinokoro', 'piricchi', 'koishimo', 'kazamidori', 'yoiyami', 'shizukun', 'fuwamo'];
+    for (const sp of ids) giveNewMonster(save, sp, 5, seededRng(1), 'test');
+    expect(save.party).toHaveLength(6);
     expect(save.box).toHaveLength(1);
     expect(swapPartyBox(save, 0, 0).ok).toBe(true);
     expect(save.party[0].speciesId).toBe('fuwamo');
-    expect(moveToBox(save, 0).ok).toBe(true);
-    expect(moveToBox(save, 0).ok).toBe(true);
+    for (let i = 0; i < 5; i++) expect(moveToBox(save, 0).ok).toBe(true);
     expect(moveToBox(save, 0).ok).toBe(false);
   });
   it('戦える仲間が0になる入れ替えはできない', () => {

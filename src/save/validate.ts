@@ -8,7 +8,7 @@ import { MOVES } from '../data/moves';
 import { MAPS } from '../data/maps';
 import { SPECIES } from '../data/species';
 import { expForLevel } from '../logic/exp';
-import { SAVE_VERSION } from '../logic/game';
+import { PARTY_MAX, SAVE_VERSION } from '../logic/game';
 import { MAX_MOVES } from '../logic/monster';
 import { MAX_LEVEL, maxHp, STAT_KEYS } from '../logic/stats';
 
@@ -137,7 +137,7 @@ export function validateSave(raw: unknown, strict = false): SaveData {
       uids.add(m.uid);
     }
   }
-  d.party = d.party.map(repairMonster).filter((m): m is MonsterInstance => !!m).slice(0, 3);
+  d.party = d.party.map(repairMonster).filter((m): m is MonsterInstance => !!m).slice(0, PARTY_MAX);
   d.box = d.box.map(repairMonster).filter((m): m is MonsterInstance => !!m);
   // UIDの重複を直す
   const seen = new Set<string>();

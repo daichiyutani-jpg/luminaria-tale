@@ -17,7 +17,7 @@ import { SHOPS } from '../data/shops';
 import { getSpecies, SPECIES_LIST } from '../data/species';
 import { itemUsableOn, STATUS_NAME } from '../logic/battle';
 import { expForLevel } from '../logic/exp';
-import { buy, dexCounts, itemCount, moveToBox, moveToParty, removeItem, reorderParty, sell, swapPartyBox } from '../logic/game';
+import { buy, PARTY_MAX, dexCounts, itemCount, moveToBox, moveToParty, removeItem, reorderParty, sell, swapPartyBox } from '../logic/game';
 import { availableEvolutions, displayName } from '../logic/monster';
 import { maxHp, statsOf } from '../logic/stats';
 import { exportSave, parseImport, requestPersistence, saveGame } from '../save/saveManager';
@@ -95,7 +95,7 @@ export async function openMainMenu(actions: MenuActions): Promise<void> {
       h(
         'div',
         { class: 'menu-grid' },
-        tile('🐾', 'なかま', `${save.party.length}/3体`, () => openParty()),
+        tile('🐾', 'なかま', `${save.party.length}/${PARTY_MAX}体`, () => openParty()),
         tile('🎒', 'どうぐ', 'アイテム', () => openBag()),
         tile('📖', 'ずかん', `${dex.seen}種 発見`, () => openDex()),
         tile('📜', 'クエスト', '依頼と目標', () => openQuests()),
@@ -119,7 +119,7 @@ export async function openParty(): Promise<void> {
     s.body.append(
       ...save.party.map((m, i) => monCard(m, async () => { audio.se('ok'); await openMonster(m, { partyIndex: i }); render(); })),
       h('div', { class: 'row', style: 'margin-top:6px' }, h('button', { class: 'btn blue grow', onClick: async () => { audio.se('ok'); await openBox(); render(); } }, `📦 ボックス（${save.box.length}体）`)),
-      h('p', { class: 'note' }, '戦いに出られるのは3体まで。4体目からは ボックスに 入ります。いちばん上の なかまが 最初に戦います。'),
+      h('p', { class: 'note' }, 'つれて歩けるのは6体まで。7体目からは ボックスに 入ります。いちばん上の なかまが 最初に戦います。'),
     );
   };
   render();
@@ -185,7 +185,7 @@ export async function openBox(): Promise<void> {
           audio.se('ok');
           const opts = [
             { label: 'ようすを見る', value: 'view' },
-            { label: 'パーティーに くわえる', value: 'add', disabled: save.party.length >= 3 },
+            { label: 'パーティーに くわえる', value: 'add', disabled: save.party.length >= PARTY_MAX },
             ...save.party.map((p, pi) => ({ label: `${displayName(p)} と いれかえる`, value: `swap${pi}` })),
           ];
           const v = await choose<string>(`${displayName(m)}を どうする？`, opts, 'cancel');

@@ -481,6 +481,42 @@ body {
   color: var(--ink2);
   font-weight: 700;
 }
+/* 戦闘中の こうたい：4体以上なら 2列で 小さく並べる */
+.blist.pgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+}
+.blist.pgrid .mon-card {
+  min-height: 0;
+  min-width: 0;
+  padding: 4px 6px;
+  gap: 4px;
+  margin: 0;
+}
+.blist.pgrid .mon-card .hpbar {
+  height: 7px;
+  border-width: 1px;
+}
+.blist.pgrid .mon-card img {
+  width: 36px;
+  height: 36px;
+}
+.blist.pgrid .mon-card .nm {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.blist.pgrid .mon-card .nm .muted,
+.blist.pgrid .mon-card .nm .st {
+  display: block;
+  font-size: 11px;
+}
+.blist.pgrid .mon-card .lv {
+  font-size: 11px;
+  white-space: nowrap;
+}
 .mon-card.fainted {
   background: #e3d9d9;
 }

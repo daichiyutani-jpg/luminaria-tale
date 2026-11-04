@@ -378,7 +378,7 @@ class BattleView {
       this.msg.textContent = forced ? 'つぎに だす なかまを えらんでください' : 'だれと こうたいする？';
       const list = h(
         'div',
-        { class: 'blist' },
+        { class: party.length > 3 ? 'blist pgrid' : 'blist' },
         party.map((m, i) => {
           const isActive = i === this.state.sides[0].active;
           const max = maxHp(m);
@@ -394,7 +394,7 @@ class BattleView {
             h(
               'div',
               { class: 'grow' },
-              h('div', { class: 'nm' }, displayName(m), m.status ? h('span', { class: `st ${m.status}` }, STATUS_NAME[m.status]) : null, isActive ? h('span', { class: 'muted' }, '（たたかっている）') : null),
+              h('div', { class: 'nm' }, displayName(m), m.status ? h('span', { class: `st ${m.status}` }, STATUS_NAME[m.status]) : null, isActive ? h('span', { class: 'muted' }, party.length > 3 ? '（出ている）' : '（たたかっている）') : null),
               h('div', { class: 'lv' }, `Lv${m.level}　HP ${m.hp}/${max}`),
               h('div', { class: `hpbar ${ratio > 0.5 ? '' : ratio > 0.2 ? 'mid' : 'low'}` }, h('i', { style: `width:${ratio * 100}%` })),
             ),

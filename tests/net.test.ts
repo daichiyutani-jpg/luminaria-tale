@@ -69,7 +69,7 @@ describe('チームのコード（QRチーム対戦）', () => {
     return `${head}.${checksum(head)}`;
   };
 
-  it('改造したチーム（ボス・覚えられない技・レベル上限こえ・素質の範囲外・4体以上）は拒否する', () => {
+  it('改造したチーム（ボス・覚えられない技・レベル上限こえ・素質の範囲外・7体以上）は拒否する', () => {
     const enc = encodeTeam('アオイ', teamA());
     if (!enc.ok) throw new Error('encode');
     const data = JSON.parse(b64urlToUtf8(enc.code.split('.')[1]));
@@ -97,9 +97,13 @@ describe('チームのコード（QRチーム対戦）', () => {
     const fakeEvo = structuredClone(data);
     fakeEvo.t[2][0] = ['fuwamo', 'kagurabi'];
     expect(decodeTeam(forge(fakeEvo)).ok).toBe(false);
-    const four = structuredClone(data);
-    four.t.push(data.t[2]);
-    expect(decodeTeam(forge(four)).ok).toBe(false);
+    const seven = structuredClone(data);
+    seven.t.push(data.t[0], data.t[1], data.t[2], data.t[2]);
+    expect(seven.t).toHaveLength(7);
+    expect(decodeTeam(forge(seven)).ok).toBe(false);
+    const six = structuredClone(data);
+    six.t.push(data.t[0], data.t[1], data.t[2]);
+    expect(decodeTeam(forge(six)).ok).toBe(true);
     expect(decodeTeam(forge({ n: 'x', t: [] })).ok).toBe(false);
     expect(decodeTeam(forge({ n: 'x', t: [[1, 2, 3]] })).ok).toBe(false);
   });
@@ -113,8 +117,8 @@ describe('チームのコード（QRチーム対戦）', () => {
 });
 
 describe('QR の表示と読み取り', () => {
-  it('qrcode-generator で作った QR を jsQR で読める（コードがそのまま戻る）', () => {
-    const enc = encodeTeam('アオイ', teamA());
+  it('qrcode-generator で作った QR を jsQR で読める（6体のチームでも コードがそのまま戻る）', () => {
+    const enc = encodeTeam('アオイ', [...teamA(), ...teamB()]);
     if (!enc.ok) throw new Error('encode');
     const qr = qrcode(0, 'L');
     qr.addData(enc.code, 'Byte');
