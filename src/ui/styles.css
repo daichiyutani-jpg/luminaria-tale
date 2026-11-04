@@ -701,10 +701,10 @@ body {
 }
 .hud-menu {
   position: absolute;
-  right: calc(16px + var(--sar));
-  bottom: calc(20px + var(--sab));
-  width: 76px;
-  height: 76px;
+  right: calc(18px + var(--sar));
+  bottom: calc(132px + var(--sab));
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   font-size: 13px;
   display: flex;
@@ -715,7 +715,7 @@ body {
   padding: 0;
 }
 .hud-menu .ico {
-  font-size: 26px;
+  font-size: 22px;
   line-height: 1.1;
 }
 .hud-party {
@@ -984,4 +984,76 @@ body {
 .ending p {
   max-width: 420px;
   line-height: 1.7;
+}
+
+/* ─── 画面の十字ボタン・しらべるボタン ─── */
+.hud > .pad-wrap {
+  pointer-events: none;
+}
+.pad-wrap > * {
+  pointer-events: auto;
+}
+.dpad {
+  position: absolute;
+  left: calc(14px + var(--sal));
+  bottom: calc(18px + var(--sab));
+  width: 162px;
+  height: 162px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+  touch-action: none;
+}
+.pad-btn {
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: rgba(29, 22, 48, 0.55);
+  color: #fff;
+  font-size: 20px;
+  border-radius: 14px;
+  padding: 0;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  backdrop-filter: blur(2px);
+}
+.pad-btn.pressed {
+  background: rgba(239, 138, 58, 0.85);
+  border-color: #fff;
+}
+.pad-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+.pad-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+.pad-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+.pad-down {
+  grid-column: 2;
+  grid-row: 3;
+}
+.pad-a {
+  position: absolute;
+  right: calc(14px + var(--sar));
+  bottom: calc(30px + var(--sab));
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: rgba(74, 127, 192, 0.88);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  padding: 0;
+  touch-action: none;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+}
+.pad-a:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }

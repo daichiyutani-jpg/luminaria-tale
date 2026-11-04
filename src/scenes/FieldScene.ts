@@ -46,6 +46,10 @@ export class FieldScene extends Phaser.Scene {
   busy = false;
   private marker!: Phaser.GameObjects.Graphics;
   private keys?: Record<string, Phaser.Input.Keyboard.Key>;
+  /** 画面の十字ボタンで押している向き（押している間 歩き続ける） */
+  padDir: Facing | null = null;
+  /** 一瞬だけ押された方向（離すのが速すぎても1歩は進む） */
+  padTap: Facing | null = null;
   private zoomLevel = 1;
 
   constructor() {
@@ -64,6 +68,8 @@ export class FieldScene extends Phaser.Scene {
     this.npcs.clear();
     this.objectSprites = [];
     this.mapImage = undefined; // restart時は前回の画像が破棄済み
+    this.padDir = null;
+    this.padTap = null;
   }
 
   create(): void {
@@ -425,19 +431,31 @@ export class FieldScene extends Phaser.Scene {
     this.interactAt({ x: this.pos.x + d.x, y: this.pos.y + d.y });
   }
 
+  /** 画面の「しらべる」ボタン：目の前の人や物を調べる */
+  pressAction(): void {
+    if (this.busy || this.moving) return;
+    this.path = [];
+    this.pendingInteract = null;
+    this.interactFront();
+  }
+
   update(): void {
     if (this.player) this.updateCamera();
-    if (!this.keys || this.busy || this.moving) return;
+    if (this.busy) this.padTap = null;
+    if (this.busy || this.moving) return;
     const k = this.keys;
-    const dir: Facing | null = k.up.isDown ? 'up' : k.down.isDown ? 'down' : k.left.isDown ? 'left' : k.right.isDown ? 'right' : null;
+    const keyDir: Facing | null = !k ? null : k.up.isDown ? 'up' : k.down.isDown ? 'down' : k.left.isDown ? 'left' : k.right.isDown ? 'right' : null;
+    const dir = this.padDir ?? this.padTap ?? keyDir;
+    this.padTap = null;
     if (dir) {
+      this.pendingInteract = null;
       const d = DIRS[dir];
       const next = { x: this.pos.x + d.x, y: this.pos.y + d.y };
       if (canStand(this.map, session.data, next.x, next.y)) {
         this.path = [next];
         this.nextStep();
       } else this.face(dir);
-    } else if (Phaser.Input.Keyboard.JustDown(k.a) || Phaser.Input.Keyboard.JustDown(k.b)) this.interactFront();
+    } else if (k && (Phaser.Input.Keyboard.JustDown(k.a) || Phaser.Input.Keyboard.JustDown(k.b))) this.interactFront();
   }
 
   /** 台本から：その場で別のマップへ移動 */

@@ -26,6 +26,7 @@ import { offerEvolution } from '../ui/growth';
 import { runScript, type ScriptHost } from '../ui/scriptRunner';
 import { openBox, openMainMenu, openReport, openSettings, openShop } from '../ui/screens';
 import { session } from './session';
+import type { Facing } from './types';
 
 /** ボスの素質（難易度調整：tests/balance.test.ts のシミュレーションで確認済み） */
 const BOSS_IVS = { hp: 12, atk: 12, def: 12, spa: 12, spd: 12, spe: 12 };
@@ -61,6 +62,12 @@ class App implements FieldHost {
     };
     window.addEventListener('resize', resize);
     window.visualViewport?.addEventListener('resize', resize);
+    // LINE などのアプリ内ブラウザでは、ツールバーの出し入れで画面の位置が変わってもイベントが来ないことがある。
+    // タッチの直前に画面の位置を測り直して、タップした場所がずれないようにする。
+    const refreshBounds = () => this.game.scale.updateBounds();
+    window.addEventListener('touchstart', refreshBounds, { capture: true, passive: true });
+    window.addEventListener('pointerdown', refreshBounds, { capture: true, passive: true });
+    window.visualViewport?.addEventListener('scroll', refreshBounds);
     await new Promise<void>((r) => this.game.events.once('boot-ready', r));
     (window as unknown as { __game: unknown }).__game = { app: this, session };
     this.showTitle();
@@ -201,7 +208,7 @@ class App implements FieldHost {
       await say(`${save.playerName}は 群島ルミナリアの「ひだまり村」で 生まれ育った。`);
       await say('この島の 灯獣（ともしびけもの）は、胸に 小さな「灯」を 宿している。');
       await say('そして 今日、あなたは 灯守（ひもり）として 旅立つ日を むかえた——。');
-      await say('（行きたい場所を タップすると 歩きます。人や物を タップすると 話したり 調べたりできます）');
+      await say('（左下の 十字ボタンで 歩きます。人や物の前で「しらべる」を押すと 話したり 調べたりできます。行きたい場所を 直接タップしても 歩けます）');
       this.field!.busy = false;
     }
   }
@@ -212,10 +219,57 @@ class App implements FieldHost {
     const place = h('div', { class: 'hud-place' });
     const party = h('div', { class: 'hud-party' });
     const menuBtn = h('button', { class: 'btn primary hud-menu', onClick: () => void this.openMenu() }, h('span', { class: 'ico' }, '☰'), 'メニュー');
-    this.hud = h('div', { class: 'hud' }, place, party, menuBtn);
+    this.hud = h('div', { class: 'hud' }, place, party, this.makePad(), menuBtn);
     uiRoot().prepend(this.hud);
     this.updateHud();
     void save;
+  }
+
+  /**
+   * 画面の十字ボタンと「しらべる」ボタン。
+   * キャンバスのタップに頼らず DOM のボタンで操作できるので、LINE などのアプリ内ブラウザでも確実に動く。
+   */
+  private makePad(): HTMLElement {
+    const dirs: [Facing, string][] = [['up', '▲'], ['left', '◀'], ['right', '▶'], ['down', '▼']];
+    let active: { dir: Facing; id: number } | null = null;
+    const release = (id?: number) => {
+      if (!active || (id !== undefined && id !== active.id)) return;
+      active = null;
+      if (this.field) this.field.padDir = null;
+      pad.querySelectorAll('.pressed').forEach((b) => b.classList.remove('pressed'));
+    };
+    const buttons = dirs.map(([dir, label]) => {
+      const b = h('button', { class: `pad-btn pad-${dir}`, 'aria-label': { up: '上', down: '下', left: '左', right: '右' }[dir] }, label);
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        audio.unlock();
+        try {
+          b.setPointerCapture(e.pointerId);
+        } catch {
+          /* 古いブラウザ */
+        }
+        pad.querySelectorAll('.pressed').forEach((x) => x.classList.remove('pressed'));
+        b.classList.add('pressed');
+        active = { dir, id: e.pointerId };
+        if (this.field) {
+          this.field.padDir = dir;
+          this.field.padTap = dir;
+        }
+      });
+      for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) b.addEventListener(ev, (e) => release(e.pointerId));
+      b.addEventListener('contextmenu', (e) => e.preventDefault());
+      return b;
+    });
+    const pad = h('div', { class: 'dpad' }, ...buttons);
+    const action = h('button', { class: 'pad-a', 'aria-label': 'しらべる・はなす' }, 'しらべる');
+    action.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      release();
+      this.field?.pressAction();
+    });
+    // 画面が隠れた・会話が始まった時に押しっぱなしにならないように
+    window.addEventListener('blur', () => release());
+    return h('div', { class: 'pad-wrap' }, pad, action);
   }
 
   updateHud(): void {

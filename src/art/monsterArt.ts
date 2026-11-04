@@ -27,8 +27,32 @@ const shadow = (cx = 100, cy = 182, rx = 52) => `<ellipse cx="${cx}" cy="${cy}" 
 const flame = (x: number, y: number, s: number, c1 = '#ffd166', c2 = '#ef6a3a') =>
   `<path d="M${x} ${y} C${x - 10 * s} ${y - 14 * s} ${x - 2 * s} ${y - 24 * s} ${x + 2 * s} ${y - 34 * s} C${x + 6 * s} ${y - 22 * s} ${x + 14 * s} ${y - 16 * s} ${x} ${y} Z" fill="${c2}" stroke="${OUT}" stroke-width="2.5"/><path d="M${x + 1} ${y - 3 * s} C${x - 4 * s} ${y - 10 * s} ${x} ${y - 16 * s} ${x + 2 * s} ${y - 22 * s} C${x + 5 * s} ${y - 14 * s} ${x + 7 * s} ${y - 9 * s} ${x + 1} ${y - 3 * s} Z" fill="${c1}"/>`;
 
+/**
+ * 仕上げのフィルター：形から凹凸を作り、左上からの光で陰影・つや・肌理（きめ）をつける。
+ * 一枚ずつ描き直さなくても、図形の絵が立体的な塗りに見えるようにする。
+ */
+const RENDER_FILTER = `<filter id="rl" filterUnits="userSpaceOnUse" x="0" y="0" width="200" height="200" color-interpolation-filters="sRGB">
+  <feGaussianBlur in="SourceAlpha" stdDeviation="7" result="ba"/>
+  <feColorMatrix in="SourceGraphic" type="luminanceToAlpha" result="lum"/>
+  <feGaussianBlur in="lum" stdDeviation="2" result="bl"/>
+  <feComposite in="ba" in2="bl" operator="arithmetic" k2=".8" k3=".45" result="h"/>
+  <feDiffuseLighting in="h" surfaceScale="7" diffuseConstant="1" lighting-color="#fff" result="dif"><feDistantLight azimuth="225" elevation="48"/></feDiffuseLighting>
+  <feSpecularLighting in="h" surfaceScale="7" specularConstant=".32" specularExponent="16" lighting-color="#fff6e0" result="spec"><feDistantLight azimuth="225" elevation="58"/></feSpecularLighting>
+  <feTurbulence type="fractalNoise" baseFrequency=".55 1.6" numOctaves="3" seed="7" result="n"/>
+  <feColorMatrix in="n" type="matrix" values=".33 .33 .33 0 0  .33 .33 .33 0 0  .33 .33 .33 0 0  0 0 0 0 1" result="ng"/>
+  <feComposite in="SourceGraphic" in2="ng" operator="arithmetic" k1=".42" k2=".8" result="tex"/>
+  <feComposite in="tex" in2="dif" operator="arithmetic" k1="1.32" result="lit"/>
+  <feComposite in="spec" in2="SourceAlpha" operator="in" result="spec2"/>
+  <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="ib"/>
+  <feComposite in="SourceAlpha" in2="ib" operator="arithmetic" k2="1" k3="-1" result="edge"/>
+  <feFlood flood-color="#1a1024" flood-opacity=".45"/>
+  <feComposite in2="edge" operator="in" result="ao"/>
+  <feMerge><feMergeNode in="lit"/><feMergeNode in="ao"/><feMergeNode in="spec2"/></feMerge>
+  <feComposite in2="SourceAlpha" operator="in"/>
+</filter>`;
+
 const svg = (inner: string, defs = '') =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><defs>${defs}</defs><g stroke-linejoin="round">${inner}</g></svg>`;
+  `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><defs>${RENDER_FILTER}${defs}</defs><g filter="url(#rl)"><g stroke-linejoin="round">${inner.replace(/stroke-width="3"/g, 'stroke-width="2"')}</g></g></svg>`;
 
 export const MONSTER_ART: Record<string, Recipe> = {
   hinokoro: () =>
@@ -283,7 +307,7 @@ export function silhouetteUrl(artId: string): string {
   let url = cache.get(key);
   if (!url) {
     const recipe = MONSTER_ART[artId];
-    const text = (recipe ? recipe() : svg('')).replace('<g stroke-linejoin="round">', '<g stroke-linejoin="round" filter="url(#sil)">').replace('<defs>', '<defs><filter id="sil"><feColorMatrix type="matrix" values="0 0 0 0 0.25  0 0 0 0 0.22  0 0 0 0 0.3  0 0 0 1 0"/></filter>');
+    const text = (recipe ? recipe() : svg('')).replace('<g filter="url(#rl)">', '<g>').replace('<g stroke-linejoin="round">', '<g stroke-linejoin="round" filter="url(#sil)">').replace('<defs>', '<defs><filter id="sil"><feColorMatrix type="matrix" values="0 0 0 0 0.25  0 0 0 0 0.22  0 0 0 0 0.3  0 0 0 1 0"/></filter>');
     url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(text)}`;
     cache.set(key, url);
   }

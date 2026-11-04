@@ -5,8 +5,8 @@
 
 | 種類 | 作り方 | 場所 | 状態 |
 | --- | --- | --- | --- |
-| 灯獣の絵（17種） | 手書きの SVG（図形の組み合わせ） | `src/art/monsterArt.ts` | 仮 |
-| マップのタイル・建物・木・草むら | Canvas 2D で描画 | `src/art/fieldArt.ts` | 仮 |
+| 灯獣の絵（17種） | 手書きの SVG（図形の組み合わせ）＋ SVG フィルターで陰影・つや・きめを付ける | `src/art/monsterArt.ts` | 仮 |
+| マップのタイル・建物・木・草むら | Canvas 2D で描画（グラデーションの陰影・やわらかい影・きめの仕上げ） | `src/art/fieldArt.ts` | 仮 |
 | 人物（主人公・NPC）の歩行絵 | Canvas 2D で描画（4方向×2コマ） | `src/art/fieldArt.ts` | 仮 |
 | 戦闘背景・タイトル背景・演出 | Phaser の図形描画 | `src/scenes/` | 仮 |
 | アプリのアイコン | ヒノコロの SVG を PNG に変換 | `public/icons/`（`scripts/make-icons.mjs` で再生成） | 仮 |
