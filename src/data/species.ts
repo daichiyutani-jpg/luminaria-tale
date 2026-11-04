@@ -1,4 +1,5 @@
 import type { SpeciesDef } from '../core/types';
+import { EXTRA_SPECIES } from './speciesExtra';
 
 /**
  * モンスター（灯獣＝ともしびけもの）のデータ。
@@ -218,6 +219,8 @@ const list: SpeciesDef[] = [
     learnset: [[1, 'sap_drain'], [1, 'iron_shell'], [1, 'rock_drill'], [24, 'thorn_rush'], [30, 'spring_heal'], [40, 'chonbo_katakunaru'], [45, 'matsu_kaori']],
   },
 ];
+
+list.push(...EXTRA_SPECIES);
 
 export const SPECIES: Record<string, SpeciesDef> = Object.fromEntries(list.map((s) => [s.id, s]));
 export const SPECIES_LIST: SpeciesDef[] = [...list].sort((a, b) => a.dexNo - b.dexNo);

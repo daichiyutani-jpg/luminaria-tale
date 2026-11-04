@@ -9,7 +9,7 @@ import { checkMonsterStrict, SaveError, validateSave } from '../src/save/validat
 
 function allFlags() {
   const s = newGame(1, 'テスト');
-  for (const f of ['got_starter', 'rival1_done', 'mist_cleared', 'nono_asked']) s.flags[f] = true;
+  for (const f of ['got_starter', 'rival1_done', 'mist_cleared', 'nono_asked', 'boss1_down', 'all_badges']) s.flags[f] = true;
   return s;
 }
 

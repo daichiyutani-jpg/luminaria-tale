@@ -7,6 +7,7 @@ import { MOVES } from '../src/data/moves';
 import { SCRIPTS, type Cmd } from '../src/data/scripts';
 import { SPECIES, SPECIES_LIST } from '../src/data/species';
 import { TRAINERS } from '../src/data/trainers';
+import { GYMS, TRAVEL_TOWNS } from '../src/data/world';
 import { ITEMS } from '../src/data/items';
 import { QUESTS } from '../src/data/quests';
 import { SHOPS } from '../src/data/shops';
@@ -16,6 +17,7 @@ import { expForLevel, expYield, levelForExp } from '../src/logic/exp';
 import { addMonster, buy, dexCounts, giveNewMonster, moveToBox, newGame, sell, swapPartyBox, updateQuests } from '../src/logic/game';
 import { availableEvolutions, createMonster, evolve, grantExp, learnMove } from '../src/logic/monster';
 import { fixedRng, seededRng } from '../src/logic/rng';
+import { findPath } from '../src/logic/field';
 import { maxHp, statsOf } from '../src/logic/stats';
 
 const ivs0 = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
@@ -260,7 +262,7 @@ describe('バトル', () => {
 });
 
 describe('進化の設計', () => {
-  it('進化の系統は「進化なし2割・1回進化5割・2回進化3割」', () => {
+  it('進化の系統は「進化なし2割・1回進化5割・2回進化3割」（100種で割り切れないので、それぞれ ±3% 以内）', () => {
     const roots = SPECIES_LIST.filter((s) => !s.evolvesFrom);
     const depth = (id: string): number => {
       const evo = SPECIES[id].evolutions ?? [];
@@ -269,9 +271,9 @@ describe('進化の設計', () => {
     const count = [0, 0, 0];
     for (const r of roots) count[depth(r.id)]++;
     expect(count[0] + count[1] + count[2]).toBe(roots.length);
-    expect(count[0] / roots.length).toBeCloseTo(0.2, 5);
-    expect(count[1] / roots.length).toBeCloseTo(0.5, 5);
-    expect(count[2] / roots.length).toBeCloseTo(0.3, 5);
+    expect(Math.abs(count[0] / roots.length - 0.2)).toBeLessThan(0.03);
+    expect(Math.abs(count[1] / roots.length - 0.5)).toBeLessThan(0.03);
+    expect(Math.abs(count[2] / roots.length - 0.3)).toBeLessThan(0.03);
   });
 });
 
@@ -285,12 +287,16 @@ describe('伝説の灯獣 チョンボ', () => {
     expect(c.catchRate).toBeLessThanOrEqual(20);
     expect(c.learnset.some(([, m]) => m === 'matsu_kaori')).toBe(true);
   });
-  it('ほたる森で、ホタルノオウを鎮めた後・捕まえる前だけ姿を見せる', () => {
-    const npc = MAPS.firefly_forest.npcs.find((n) => n.id === 'legend_chonbo');
+  it('あけぼの神殿町（ジム8・リーダーLv54）のすぐ北、たそがれ街道に出て、捕まえるまで姿を見せる', () => {
+    const npc = MAPS.tasogare_road.npcs.find((n) => n.id === 'legend_chonbo');
     expect(npc).toBeTruthy();
+    expect(Object.values(MAPS).filter((m) => m.npcs.some((n) => n.id === 'legend_chonbo'))).toHaveLength(1);
+    const town = MAPS.akebono_temple;
+    expect(town.warps.some((w) => w.to.mapId === 'tasogare_road')).toBe(true);
+    const gym = GYMS.find((g) => g.townId === 'akebono_temple')!;
+    expect(gym.ace).toBeGreaterThanOrEqual(48);
+    expect(gym.ace).toBeLessThanOrEqual(56);
     const save = newGame(1, 'テスト');
-    expect(checkCondition(save, npc!.showIf!)).toBe(false);
-    save.flags.boss1_down = true;
     expect(checkCondition(save, npc!.showIf!)).toBe(true);
     save.flags.chonbo_caught = true;
     expect(checkCondition(save, npc!.showIf!)).toBe(false);
@@ -424,5 +430,49 @@ describe('パーティー・道具・クエスト', () => {
     const potions = save.items.potion;
     updateQuests(save);
     expect(save.items.potion).toBe(potions);
+  });
+});
+
+describe('10の町・ジム・ボス（2026-11-05）', () => {
+  it('灯獣は100種', () => {
+    expect(SPECIES_LIST).toHaveLength(100);
+    expect(new Set(SPECIES_LIST.map((s) => s.dexNo)).size).toBe(100);
+  });
+  it('町は10、それぞれにジムがあり、リーダーはだんだん強くなる', () => {
+    expect(TRAVEL_TOWNS).toHaveLength(10);
+    expect(GYMS).toHaveLength(10);
+    for (const t of TRAVEL_TOWNS) expect(MAPS[t.id], t.id).toBeTruthy();
+    const sorted = [...GYMS].sort((a, b) => a.n - b.n);
+    sorted.forEach((g, i) => {
+      expect(MAPS[`${g.townId}_gym`], g.townId).toBeTruthy();
+      expect(TRAINERS[`gym${g.n}`]).toBeTruthy();
+      if (i > 0) expect(g.ace).toBeGreaterThan(sorted[i - 1].ace);
+      expect(g.reward.length).toBeGreaterThan(0);
+    });
+    expect(sorted[9].ace).toBeLessThan(70);
+  });
+  it('灯章が10個そろうまで、都の北（黒霞の洞窟）へは行けない', () => {
+    const cap = MAPS.luminaria_capital;
+    expect(cap.barrierFlag).toBe('all_badges');
+    const save = newGame(1, 'テスト');
+    expect(findPath(cap, save, { x: 9, y: 14 }, { x: 9, y: 0 })).toBeNull();
+    save.flags.all_badges = true;
+    expect(findPath(cap, save, { x: 9, y: 14 }, { x: 9, y: 0 })).not.toBeNull();
+  });
+  it('洞窟の最奥のボスは Lv70 のトコヨノヤミ', () => {
+    const boss = SCRIPTS.final_boss.find((c) => 'boss' in c) as Extract<Cmd, { boss: unknown }>;
+    expect(boss.boss).toEqual({ speciesId: 'tokoyonoyami', level: 70 });
+    expect(SPECIES.tokoyonoyami.catchRate).toBe(0);
+  });
+  it('2周目（ボスの後）のジムリーダーは、1周目より強く、ボスより高いレベル', () => {
+    for (const g of GYMS) {
+      expect(g.rematchAce).toBeGreaterThan(70);
+      expect(g.rematchAce).toBeGreaterThan(g.ace);
+      const r = TRAINERS[`gym${g.n}_r`];
+      expect(r.party.every((p) => p.level > 69)).toBe(true);
+    }
+  });
+  it('トレーナーの灯獣・技・進化先がすべて存在する', () => {
+    for (const t of Object.values(TRAINERS)) for (const p of t.party) if (p.speciesId !== '__rival_starter') expect(SPECIES[p.speciesId], `${t.id}: ${p.speciesId}`).toBeTruthy();
   });
 });

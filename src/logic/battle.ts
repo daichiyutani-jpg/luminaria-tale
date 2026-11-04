@@ -47,6 +47,8 @@ export interface BattleState {
   captured: MonsterInstance | null;
   /** 戦闘中にレベルが上がった味方 */
   leveledUp: string[];
+  /** 文章を どちら側から見て書くか（対人戦の相手側の端末では 1。省略時は 0）。処理の結果には影響しない */
+  pov?: SideIndex;
 }
 
 export type Action =
@@ -122,7 +124,7 @@ export function usableMoves(mon: MonsterInstance): number[] {
 
 const sideName = (state: BattleState, side: SideIndex) => {
   const mon = active(state, side);
-  if (side === 0) return displayName(mon);
+  if (side === (state.pov ?? 0)) return displayName(mon);
   return state.kind === 'wild' || state.kind === 'boss' ? `やせいの ${displayName(mon)}` : `あいての ${displayName(mon)}`;
 };
 
@@ -368,13 +370,14 @@ function doSwitch(state: BattleState, side: SideIndex, to: number, ev: BattleEve
   const s = state.sides[side];
   const target = s.party[to];
   if (!target || target.hp <= 0 || to === s.active) return false;
-  if (!state.needsSwitch[side]) ev.push({ t: 'msg', text: side === 0 ? `もどれ、${displayName(active(state, side))}！` : `${s.name}は ${displayName(active(state, side))}を ひっこめた。` });
+  const mine = side === (state.pov ?? 0);
+  if (!state.needsSwitch[side]) ev.push({ t: 'msg', text: mine ? `もどれ、${displayName(active(state, side))}！` : `${s.name}は ${displayName(active(state, side))}を ひっこめた。` });
   s.active = to;
   s.stages = emptyStages();
   s.guard = 0;
   state.needsSwitch[side] = false;
   ev.push({ t: 'send', side, index: to });
-  ev.push({ t: 'msg', text: side === 0 ? `いけっ、${displayName(target)}！` : `${s.name}は ${displayName(target)}を くりだした！` });
+  ev.push({ t: 'msg', text: mine ? `いけっ、${displayName(target)}！` : `${s.name}は ${displayName(target)}を くりだした！` });
   if (side === 0 && !state.participants.includes(target.uid)) state.participants.push(target.uid);
   return true;
 }
@@ -459,7 +462,7 @@ function doItem(state: BattleState, side: SideIndex, itemId: string, targetIndex
   const s = state.sides[side];
   const mon = s.party[targetIndex];
   if (!item || !mon) return;
-  const who = side === 0 ? 'あなた' : s.name;
+  const who = side === (state.pov ?? 0) ? 'あなた' : s.name;
   ev.push({ t: 'msg', text: `${who}は ${item.name}を つかった！` });
   const isActive = targetIndex === s.active;
   const max = maxHp(mon);

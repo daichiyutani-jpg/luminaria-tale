@@ -11,6 +11,7 @@
  */
 import type { Facing } from '../core/types';
 import type { Condition } from './conditions';
+import { WORLD_MAPS } from './world';
 
 export type BgmId = 'title' | 'town' | 'field' | 'forest' | 'battle' | 'boss' | 'evolution' | 'victory' | 'indoor';
 
@@ -91,18 +92,19 @@ const village: MapDef = {
     'T..f....,,....f..T',
     'T,,,,,,,,,,,,,,,,T',
     'T.......,,.......T',
-    'T.===...,,..S....T',
-    'T.===...,,.......T',
-    'T.#D#...,,..~~~~.T',
-    'T.......,,..~~~~.T',
+    'T.===...,,.=====.T',
+    'T.===...,,.=====.T',
+    'T.#D#...,,.##D##.T',
+    'T.......,,.....S.T',
     'T..ff...,,..~~~~.T',
-    'T.f.....,,....f..T',
+    'T.f.....,,..~~~~.T',
     'TTTTTTTTTTTTTTTTTT',
   ],
   warps: [
     { x: 4, y: 4, to: { mapId: 'lab', x: 4, y: 6, facing: 'up' } },
     { x: 13, y: 4, to: { mapId: 'center', x: 4, y: 6, facing: 'up' } },
     { x: 3, y: 11, to: { mapId: 'home', x: 3, y: 5, facing: 'up' } },
+    { x: 13, y: 11, to: { mapId: 'village_gym', x: 5, y: 12, facing: 'up' } },
     { x: 8, y: 0, to: { mapId: 'grassland', x: 9, y: 28, facing: 'up' } },
     { x: 9, y: 0, to: { mapId: 'grassland', x: 10, y: 28, facing: 'up' } },
   ],
@@ -134,9 +136,10 @@ const village: MapDef = {
     },
   ],
   objects: [
-    { id: 'sign_village', x: 12, y: 9, kind: 'sign', text: 'ここは ひだまり村\n北：そよかぜ草原 → ほたる森\n「灯をたやさず、灯獣と ともに」' },
+    { id: 'sign_village', x: 15, y: 12, kind: 'sign', text: 'ここは ひだまり村\n北：そよかぜ草原 → ほたる森\n右の建物：ひだまりジム（ふつう）\n「灯をたやさず、灯獣と ともに」' },
     { id: 'hidden_village_1', x: 16, y: 1, kind: 'hidden', item: ['potion', 2] },
   ],
+  onEnter: [{ if: { notFlag: 'visited_village' }, script: 'visit_village' }],
 };
 
 const home: MapDef = {
@@ -371,7 +374,7 @@ const forest: MapDef = {
   barrierFlag: 'mist_cleared',
   palette: { ground: '#5f8f5a', path: '#8f9a6a', grass: '#3f7a44', tree: '#244d33', accent: '#d9f27a' },
   tiles: [
-    'TTTTTTTTTTTTTTTTTTTT',
+    'TTTTTTTTT,,TTTTTTTTT',
     'TTTTTTT.....TTTTTTTT',
     'TTTTTT...P...TTTTTTT',
     'TTTTTT.......TTTTTTT',
@@ -403,6 +406,8 @@ const forest: MapDef = {
   warps: [
     { x: 9, y: 27, to: { mapId: 'grassland', x: 9, y: 1, facing: 'down' } },
     { x: 10, y: 27, to: { mapId: 'grassland', x: 10, y: 1, facing: 'down' } },
+    { x: 9, y: 0, to: { mapId: 'komorebi_road', x: 9, y: 28, facing: 'up' } },
+    { x: 10, y: 0, to: { mapId: 'komorebi_road', x: 10, y: 28, facing: 'up' } },
   ],
   encounters: {
     rate: 12,
@@ -448,10 +453,16 @@ const forest: MapDef = {
       talk: [{ script: 'hotaru_calm' }],
     },
     {
-      id: 'legend_chonbo', name: 'チョンボ', x: 12, y: 3, facing: 'down',
-      look: { body: '#a8743a', hair: '#e8dcc0', kind: 'boss', speciesId: 'chonbo' },
-      showIf: { all: [{ flag: 'boss1_down' }, { notFlag: 'chonbo_caught' }] },
-      talk: [{ script: 'legend_chonbo' }],
+      id: 'forest_gate', name: '森の番人', x: 9, y: 1, facing: 'down',
+      look: { body: '#5a7a4a', hair: '#3a2a1a', kind: 'person' },
+      showIf: { notFlag: 'boss1_down' },
+      talk: [{ script: 'forest_gate' }],
+    },
+    {
+      id: 'forest_gate_pet', name: '番人のコイシモ', x: 10, y: 1, facing: 'down',
+      look: { body: '#a07a4e', hair: '#a07a4e', kind: 'monster', speciesId: 'koishimo' },
+      showIf: { notFlag: 'boss1_down' },
+      talk: [{ script: 'forest_gate' }],
     },
   ],
   objects: [
@@ -467,7 +478,7 @@ const forest: MapDef = {
   onEnter: [{ if: { notFlag: 'forest_entered' }, script: 'forest_first' }],
 };
 
-export const MAPS: Record<string, MapDef> = Object.fromEntries([village, home, lab, center, grassland, forest].map((m) => [m.id, m]));
+export const MAPS: Record<string, MapDef> = Object.fromEntries([village, home, lab, center, grassland, forest, ...WORLD_MAPS].map((m) => [m.id, m]));
 
 export function getMap(id: string): MapDef {
   const m = MAPS[id];

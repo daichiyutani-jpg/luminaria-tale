@@ -1,0 +1,83 @@
+/* 「つうしん」画面（src/ui/link.ts）だけで使う見た目 */
+.link-btns {
+  display: grid;
+  gap: 8px;
+}
+.link-btns .btn {
+  width: 100%;
+}
+.link-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  margin: 8px 0;
+  line-height: 1.5;
+}
+.link-check input {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  margin-top: 1px;
+}
+.link-qr {
+  display: flex;
+  justify-content: center;
+  margin: 6px 0 8px;
+}
+.link-qr canvas {
+  width: min(78vw, 300px);
+  height: auto;
+  image-rendering: pixelated;
+  border-radius: 8px;
+  background: #fff;
+}
+.link-code {
+  width: 100%;
+  min-height: 64px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 11px;
+  word-break: break-all;
+  border-radius: 8px;
+  border: 2px solid var(--line, #555);
+  padding: 6px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.link-video {
+  width: 100%;
+  max-height: 46vh;
+  background: #000;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.link-step {
+  font-weight: 700;
+  margin: 4px 0 6px;
+}
+.link-status {
+  text-align: center;
+  font-weight: 700;
+  margin: 8px 0;
+}
+.link-status.err {
+  color: #e05a4a;
+}
+.link-offer {
+  min-height: 64px;
+}
+.link-moves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.link-moves span {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(127, 127, 127, 0.2);
+}
+.link-file {
+  display: none;
+}

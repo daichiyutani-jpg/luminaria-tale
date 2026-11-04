@@ -3,6 +3,7 @@
  * 文章中の {player} は主人公の名前、{partner} は最初の相棒の名前に置き換わる。
  */
 import type { Condition } from './conditions';
+import { WORLD_SCRIPTS } from './world';
 
 export type Cmd =
   | { say: string; who?: string }
@@ -20,7 +21,13 @@ export type Cmd =
   | { box: true }
   | { if: Condition; then: Cmd[]; else?: Cmd[] }
   | { se: string }
-  | { chapterClear: true };
+  | { chapterClear: true }
+  /** ジム：灯章を持っていなければ勝負、ボスを倒した後は本気の再戦 */
+  | { gym: number }
+  /** 灯の渡し舟（行ったことのある町へ） */
+  | { travel: true }
+  /** エンディング */
+  | { ending: true };
 
 export const SCRIPTS: Record<string, Cmd[]> = {
   // ── 家 ─────────────────────────────
@@ -70,7 +77,8 @@ export const SCRIPTS: Record<string, Cmd[]> = {
     { who: 'ソラネ博士', say: '{player}！ ほたる森の黒霞を はらったんだね！ すばらしい！' },
     { who: 'ソラネ博士', say: '「静夜団（せいやだん）」……灯を消そうとする者たちが いるとは。' },
     { who: 'ソラネ博士', say: '彼らの言う「ヨル様」、そして 黒霞と 進化のなぞ……。島の伝説に出てくる「夜明けの獣」と 関係があるのかもしれない。' },
-    { who: 'ソラネ博士', say: '海の向こうの島々にも、まだ 見たことのない灯獣が たくさん いるはずだ。きみの旅は ここからだよ。' },
+    { who: 'ソラネ博士', say: 'この島には 10の町と 10のジムが ある。ジムリーダーに 勝って 灯章を 10個 集めれば、静夜団の いる 黒霞の洞窟へ 行けるはずだ。' },
+    { who: 'ソラネ博士', say: 'ほたる森の 北から、こもれび街道を ぬけて こもれび町へ。きみの旅は ここからだよ。' },
     { chapterClear: true },
   ],
   rival_wait: [{ who: 'カイト', say: 'よう、{player}！ 博士の話、早く聞いてこいよ。オレは もう 相棒を決めてあるんだ！' }],
@@ -192,7 +200,8 @@ export const SCRIPTS: Record<string, Cmd[]> = {
   ],
   hotaru_calm: [
     { who: 'ホタルノオウ', say: '森の灯は もどった。旅の灯守よ、そなたの灯に 祝福を。' },
-    { if: { notFlag: 'chonbo_caught' }, then: [{ who: 'ホタルノオウ', say: '……泉の右の 古い松の根元から、なつかしい 香りが する。千年に一度 目をさます 伝説の灯獣が いるのかもしれぬ。' }] },
+    { who: 'ホタルノオウ', say: '森の北の道は もう ひらいておる。こもれび街道を ぬければ、こもれび町じゃ。' },
+    { if: { notFlag: 'chonbo_caught' }, then: [{ who: 'ホタルノオウ', say: '……遠く、あけぼの神殿町の 北の 古い松から、なつかしい 香りが する。千年に一度 目をさます 伝説の灯獣じゃ。そなたが もっと 強くなったら 会いに行くがよい。' }] },
   ],
   legend_chonbo: [
     { say: '古い松の根元から、ふしぎな 香りが ただよってくる……。' },
@@ -205,4 +214,7 @@ export const SCRIPTS: Record<string, Cmd[]> = {
       run: [{ say: 'チョンボは 土の中に しずかに もどっていった……。' }],
     },
   ],
+  forest_gate: [{ who: '森の番人', say: '森の奥には 黒霞の主が いる。森の主を しずめるまでは、北の 街道へは 通せないよ。' }],
 };
+
+Object.assign(SCRIPTS, WORLD_SCRIPTS);

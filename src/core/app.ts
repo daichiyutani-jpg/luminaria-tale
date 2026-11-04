@@ -8,6 +8,8 @@ import { getItem } from '../data/items';
 import { getMap, type MapDef, type NpcDef, type ObjectDef } from '../data/maps';
 import { getSpecies } from '../data/species';
 import { rivalStarterFor, TRAINERS } from '../data/trainers';
+import { GYMS, townArrival, TRAVEL_TOWNS } from '../data/world';
+import { getItem as itemDef } from '../data/items';
 import { addItem, addMonster, newGame } from '../logic/game';
 import { availableEvolutions, createMonster, displayName, healFully, issueUid } from '../logic/monster';
 import { mathRng } from '../logic/rng';
@@ -432,7 +434,7 @@ class App implements FieldHost {
   }
 
   private scriptHost(scene: FieldScene): ScriptHost {
-    return {
+    const host: ScriptHost = {
       trainerBattle: async (trainerId) => {
         const save = session.data;
         const t = TRAINERS[trainerId];
@@ -440,7 +442,7 @@ class App implements FieldHost {
           const sp = p.speciesId === '__rival_starter' ? rivalStarterFor(Object.keys(save.flags).find((k) => k.startsWith('starter_'))?.slice(8) ?? 'hinokoro') : p.speciesId;
           return createMonster(sp, p.level, mathRng, { uid: issueUid(save), caughtAt: t.name });
         });
-        const res = await this.battle(scene, { kind: 'trainer', enemies, trainer: t, backdrop: scene.map.kind === 'indoor' ? 'indoor' : scene.map.kind === 'dungeon' ? 'forest' : 'field', bgm: 'battle' }, !!t.loseOk);
+        const res = await this.battle(scene, { kind: 'trainer', enemies, trainer: t, backdrop: scene.map.kind === 'indoor' ? 'indoor' : scene.map.kind === 'dungeon' ? 'forest' : 'field', bgm: t.bgm ?? 'battle' }, !!t.loseOk);
         if (res === 'win') {
           if (!save.defeatedTrainers.includes(trainerId)) save.defeatedTrainers.push(trainerId);
           session.checkQuests();
@@ -475,7 +477,73 @@ class App implements FieldHost {
         session.data.respawn = { mapId: scene.map.id, x: scene.pos.x, y: scene.pos.y };
       },
       chapterClear: () => this.chapterClear(),
+      gymBattle: (n) => this.gymBattle(n, host),
+      travel: async () => {
+        const save = session.data;
+        const towns = TRAVEL_TOWNS.filter((t) => t.id === 'village' || save.flags[`visited_${t.id}`]);
+        const id = await choose<string>('どの町へ 行く？', towns.map((t) => ({ label: t.name, value: t.id })), '');
+        if (!id) return;
+        await say('灯の舟が 光の川を すべっていく……');
+        const a = townArrival(id);
+        save.location = { mapId: a.mapId, x: a.x, y: a.y, facing: 'down' };
+        scene.warpTo(a.mapId, a.x, a.y, 'down');
+      },
+      ending: () => this.ending(),
     };
+    return host;
+  }
+
+  /** ジム：灯章がなければ勝負、ボスを倒した後は本気の再戦（2周目） */
+  private async gymBattle(n: number, host: ScriptHost): Promise<boolean> {
+    const save = session.data;
+    const gym = GYMS.find((g) => g.n === n);
+    if (!gym) return true;
+    const give = async (items: [string, number][]) => {
+      for (const [id, k] of items) {
+        addItem(save, id, k);
+        await say(`${itemDef(id)?.name ?? id}を ${k}こ もらった！`);
+      }
+    };
+    if (!save.flags[`badge_${n}`]) {
+      await runScript(`gym${n}_hello`, host);
+      if (!(await confirm(`ジムリーダーの ${gym.leader}に 挑戦する？
+（相手の いちばん強い灯獣は Lv${gym.ace}）`, '挑戦する', 'やめておく'))) return true;
+      const r = await host.trainerBattle(`gym${n}`);
+      if (r !== 'win') return false;
+      save.flags[`badge_${n}`] = true;
+      audio.se('ok');
+      await say(`${gym.badge}を 手に入れた！`);
+      await give(gym.reward);
+      const count = GYMS.filter((g) => save.flags[`badge_${g.n}`]).length;
+      if (count >= GYMS.length && !save.flags.all_badges) {
+        save.flags.all_badges = true;
+        await say(`灯章が ${GYMS.length}個 そろった！
+灯章の光が ルミナリア都の 北の 黒霞を 晴らしたようだ……！`);
+      } else {
+        await say(`（灯章 ${count} / ${GYMS.length}）`);
+      }
+      await runScript(`gym${n}_after`, host);
+      session.checkQuests();
+      void session.autosave('gym');
+      return true;
+    }
+    if (!save.flags.final_boss_down) {
+      await runScript(`gym${n}_after`, host);
+      return true;
+    }
+    const first = !save.flags[`badge2_${n}`];
+    if (!(await confirm(`本気の ${gym.leader}と 勝負する？
+（2周目・相手の いちばん強い灯獣は Lv${gym.rematchAce}）${first ? '' : '\n何度でも 挑戦できます'}`, '勝負する', 'やめておく'))) return true;
+    const r = await host.trainerBattle(`gym${n}_r`);
+    if (r !== 'win') return false;
+    if (first) {
+      save.flags[`badge2_${n}`] = true;
+      await say(`${gym.badge}が きらきらと かがやきだした！
+（きらめく灯章 ${GYMS.filter((g) => save.flags[`badge2_${g.n}`]).length} / ${GYMS.length}）`);
+      await give(gym.rematchReward);
+    }
+    void session.autosave('gym');
+    return true;
   }
 
   /** 戦闘して、捕獲・進化・全滅まで処理する */
@@ -527,6 +595,28 @@ class App implements FieldHost {
     return outcome.result;
   }
 
+  private async ending(): Promise<void> {
+    const save = session.data;
+    save.flags.final_boss_down = true;
+    await session.saveNow();
+    audio.playBgm('ending');
+    await new Promise<void>((resolve) => {
+      const el = h(
+        'div',
+        { class: 'ending' },
+        h('div', { style: 'font-size:14px;letter-spacing:.3em' }, 'THE END'),
+        h('h2', null, '夜明けの 灯'),
+        h('p', null, `${save.playerName}と なかまたちは、トコヨノヤミを 鎮め、ルミナリアの 島々に 朝を 取りもどした。`),
+        h('p', null, '灯は 奪いあうものではなく、分けあうもの——。島じゅうの 灯が、いつもより 少しだけ 明るく ともっている。'),
+        h('p', { style: 'font-size:13px;opacity:.9' }, `プレイ時間 ${formatTime(save.playTimeSec)}　図鑑 ${Object.values(save.dex).filter((v) => v === 'caught').length}種`),
+        h('p', { style: 'font-size:13px;opacity:.9' }, 'クリアおめでとう！ これからは 各地の ジムリーダーが 本気のチーム（Lv72〜90）で 再戦してくれます。きらめく灯章を 10個 集めよう。図鑑100種も めざしてね。'),
+        h('button', { class: 'btn primary', onClick: () => { audio.se('ok'); el.remove(); resolve(); } }, '冒険を つづける'),
+      );
+      uiRoot().append(el);
+    });
+    audio.playBgm(this.field?.map.bgm ?? 'town');
+  }
+
   private async chapterClear(): Promise<void> {
     const save = session.data;
     save.flags.chapter1_clear = true;
@@ -539,9 +629,9 @@ class App implements FieldHost {
         h('div', { style: 'font-size:14px;letter-spacing:.3em' }, 'CHAPTER 1'),
         h('h2', null, 'ほたる森の 灯'),
         h('p', null, `${save.playerName}と なかまたちは、黒霞に おおわれた ほたる森に 灯を 取りもどした。`),
-        h('p', null, 'けれど 静夜団と「ヨル」、そして 夜明けの獣の なぞは まだ 海の向こうに ねむっている——。'),
+        h('p', null, 'けれど 静夜団と「ヨル」、そして 黒霞の なぞは まだ 島の 北に ねむっている——。'),
         h('p', { style: 'font-size:13px;opacity:.9' }, `プレイ時間 ${formatTime(save.playTimeSec)}　図鑑 ${Object.values(save.dex).filter((v) => v === 'caught').length}種`),
-        h('p', { style: 'font-size:13px;opacity:.9' }, '試作版は ここまでです。このあとも 草原と森で 灯獣あつめ・育成・サブクエストを 続けられます。'),
+        h('p', { style: 'font-size:13px;opacity:.9' }, '森の北の道が ひらいた。こもれび街道を ぬけて、2つ目の町「こもれび町」へ 向かおう。島には 10の町と 10のジムが ある。'),
         h('button', { class: 'btn primary', onClick: () => { audio.se('ok'); el.remove(); resolve(); } }, '冒険を つづける'),
       );
       uiRoot().append(el);

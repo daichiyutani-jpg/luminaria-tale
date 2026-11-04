@@ -23,7 +23,7 @@ import { maxHp, statsOf } from '../logic/stats';
 import { exportSave, parseImport, requestPersistence, saveGame } from '../save/saveManager';
 import { SaveError } from '../save/validate';
 import { offlineStatus } from '../pwa';
-import { alertBox, choose, chooseNumber, confirm, say, toast } from './dialog';
+import { alertBox, choose, chooseNumber, confirm, toast } from './dialog';
 import { clear, formatTime, h, uiRoot } from './dom';
 import { elementChip, offerEvolution } from './growth';
 
@@ -598,19 +598,15 @@ export async function openSettings(opts: { inTitle?: boolean; onDeleteAll?: () =
 
 declare const __APP_VERSION__: string;
 
-// ── 通信（未実装の案内） ─────────────────────
+// ── 通信（QRコードで ともだちと遊ぶ。中身は src/ui/link.ts、開いた時だけ読みこむ） ─────
 export async function openOnline(): Promise<void> {
-  const s = openScreen('つうしん');
-  const info = async (kind: string) => {
-    audio.se('ok');
-    await say(`${kind}は いま 準備中です。\n通信サーバーが まだ 用意されていないため、この試作版では 使えません。`);
-    await say('一人で遊ぶ ぼうけんは、通信なしで すべて 遊べます。');
-  };
-  s.body.append(
-    h('div', { class: 'card' }, h('h3', null, '⚔ 通信対戦（じゅんびちゅう）'), h('p', { class: 'note' }, 'QRコードで ルームに参加して、3体ずつで 対戦します。'), h('button', { class: 'btn', style: 'width:100%', onClick: () => info('通信対戦') }, 'ルームを つくる')),
-    h('div', { class: 'card' }, h('h3', null, '🔁 灯獣の交換（じゅんびちゅう）'), h('p', { class: 'note' }, 'QRコードで 相手とつながり、おたがいに 確認してから 交換します。'), h('button', { class: 'btn', style: 'width:100%', onClick: () => info('灯獣の交換') }, 'ルームを つくる')),
-    h('p', { class: 'note', style: 'color:#ccc' }, 'この画面を開いても インターネットには 接続しません。'),
-  );
-  await s.done;
+  let mod: typeof import('./link');
+  try {
+    mod = await import('./link');
+  } catch {
+    await alertBox('「つうしん」を よみこめませんでした。いちど インターネットに つないで ゲームを ひらきなおしてね。');
+    return;
+  }
+  await mod.openLink();
 }
 

@@ -10,6 +10,8 @@
  * - 最後に RENDER_FILTER（光・つや・きめ）を全体にかける
  */
 
+import { GEN_ART, type GenArt, type Plan } from '../data/speciesExtra';
+
 type Recipe = () => string;
 type Pt = [number, number];
 
@@ -642,6 +644,275 @@ export const MONSTER_ART: Record<string, Recipe> = {
   hotarunoou,
   chonbo,
 };
+
+// ───────────────────────── 設計図から描く灯獣（2つ目の町以降） ─────────────────────────
+// src/data/speciesExtra.ts の GEN_ART（体の形・段階・色・属性）から絵を組み立てる。
+// 段階 1=かわいい（大きな丸い目・丸い体）、2=カッコいい（つり目・とがった耳や角）、3=いちばん強そう（光る目・オーラ・飾りが増える）
+
+function hex(c: string): [number, number, number] {
+  const n = parseInt(c.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function tone(c: string, amt: number): string {
+  const [r, g, b] = hex(c);
+  const f = (v: number) => Math.round(amt >= 0 ? v + (255 - v) * amt : v * (1 + amt));
+  return `#${[f(r), f(g), f(b)].map((v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** 左右対称に置く（中心 cx を軸に反転） */
+const mirAt = (c: string, cx: number) => `${c}<g transform="translate(${cx * 2} 0) scale(-1 1)">${c}</g>`;
+
+/** 属性の飾り（頭の上）。s は段階 */
+function featureTop(el: GenArt['feature'], s: number, x: number, y: number, acc: string): string {
+  const k = 0.7 + s * 0.3;
+  switch (el) {
+    case 'blaze':
+      return s === 1 ? flame(x, y, 18, 7) : flame(x - 8, y + 2, 22 * k, 8, -18) + flame(x + 8, y + 2, 22 * k, 8, 18) + flame(x, y, 30 * k, 10);
+    case 'tide':
+      return s === 1
+        ? `<path d="M${x} ${y - 24} C${x - 8} ${y - 12} ${x - 12} ${y - 6} ${x - 12} ${y} C${x - 12} ${y + 8} ${x + 12} ${y + 8} ${x + 12} ${y} C${x + 12} ${y - 6} ${x + 8} ${y - 12} ${x} ${y - 24}Z" fill="#bfeaff" ${sw(1.6)}/>`
+        : `<path d="M${x - 14} ${y + 4} C${x - 16} ${y - 10} ${x - 6} ${y - 26 * k} ${x + 8} ${y - 34 * k} C${x + 2} ${y - 20} ${x + 12} ${y - 12} ${x + 16} ${y + 4}Z" fill="url(#gTide)" ${sw(1.6)}/>`;
+    case 'sprout':
+      return s === 1
+        ? leaf(x - 4, y, 20, 8, -20, '#6ccf4a') + leaf(x + 4, y, 16, 7, 24, '#4cae3a')
+        : [-50, -25, 0, 25, 50].slice(s === 2 ? 1 : 0, s === 2 ? 4 : 5).map((a) => leaf(x, y + 4, 26 * k, 9, a, a % 50 ? '#5cc04a' : '#3f9a3a')).join('');
+    case 'volt':
+      return s === 1 ? bolt(x, y - 10, 0.9, 10) : bolt(x - 12, y - 10, 1.1 * k, -20) + bolt(x + 12, y - 10, 1.1 * k, 20) + (s === 3 ? bolt(x, y - 22, 1.3, 0) : '');
+    case 'stone':
+      return s === 1
+        ? `<ellipse cx="${x}" cy="${y - 6}" rx="10" ry="8" fill="url(#rock)" ${sw(1.5)}/>`
+        : [-16, 0, 16].map((dx, i) => `<path d="M${x + dx - 7} ${y + 4} L${x + dx} ${y - (i === 1 ? 30 : 20) * k} L${x + dx + 7} ${y + 4}Z" fill="${s === 3 ? 'url(#gGem)' : 'url(#rock)'}" ${sw(1.5)}/>`).join('');
+    case 'gale':
+      return s === 1
+        ? `<path d="M${x} ${y} C${x - 10} ${y - 14} ${x + 6} ${y - 22} ${x + 10} ${y - 12}" fill="none" stroke="#e8fbff" stroke-width="5"/>`
+        : [-14, 0, 14].map((dx) => `<path d="M${x + dx - 4} ${y + 4} C${x + dx - 6} ${y - 14} ${x + dx * 1.6} ${y - 26 * k} ${x + dx * 2} ${y - 30 * k} C${x + dx * 0.8 + 2} ${y - 16} ${x + dx + 6} ${y - 6} ${x + dx + 4} ${y + 4}Z" fill="${acc}" ${sw(1.4)}/>`).join('');
+    case 'shine':
+      return s === 1
+        ? star(x, y - 10, 5, 10, 4.5, -90, 'url(#gold)', 1.5)
+        : `<ellipse cx="${x}" cy="${y - 10}" rx="${22 * k}" ry="${7 * k}" fill="none" stroke="#ffe680" stroke-width="${3 + s}"/>${star(x, y - 12, 4, 9 * k, 3.5, -90, 'url(#gold)', 1.2)}`;
+    case 'shade':
+      return mirAt(
+        `<path d="M${x - 10} ${y + 6} C${x - 18} ${y - 6} ${x - 22} ${y - (s === 1 ? 10 : 30 * k)} ${x - (s === 1 ? 14 : 30)} ${y - (s === 1 ? 14 : 40 * k)} C${x - 12} ${y - 16} ${x - 6} ${y - 6} ${x - 2} ${y + 6}Z" fill="${s === 1 ? tone(acc, 0.2) : '#2a1a3a'}" ${sw(1.5)}/>`,
+        x,
+      );
+    default:
+      return s === 1
+        ? `<path d="M${x - 6} ${y + 2} C${x - 8} ${y - 12} ${x + 2} ${y - 16} ${x} ${y - 6} C${x + 4} ${y - 16} ${x + 12} ${y - 8} ${x + 6} ${y + 2}Z" fill="${acc}" ${sw(1.4)}/>`
+        : furRing(x, y + 10, 16, 8, 18, 10 * k, acc, 4);
+  }
+}
+
+/** 最終進化の後光（オーラ） */
+const auraFx = (c: string) =>
+  `<circle cx="100" cy="104" r="96" fill="url(#gAura)"/>${Array.from({ length: 12 }, (_, i) => {
+    const a = (i / 12) * Math.PI * 2;
+    return `<path d="M${(100 + Math.cos(a) * 60).toFixed(1)} ${(104 + Math.sin(a) * 60).toFixed(1)} L${(100 + Math.cos(a + 0.05) * 92).toFixed(1)} ${(104 + Math.sin(a + 0.05) * 92).toFixed(1)}" stroke="${c}" stroke-width="3" opacity=".35"/>`;
+  }).join('')}`;
+
+/** 顔。段階1は丸目のかわいい顔、2・3はつり目（3は光る目） */
+function face(s: number, y: number, r: number, iris: string, plan: Plan): string {
+  if (s === 1) {
+    const er = r * 0.27;
+    const nose =
+      plan === 'bird'
+        ? P(`M100 ${y + r * 0.26} L${100 - r * 0.16} ${y + r * 0.38} L100 ${y + r * 0.52}`, 'url(#gold)', 1.5)
+        : `<ellipse cx="100" cy="${y + r * 0.3}" rx="${r * 0.1}" ry="${r * 0.07}" fill="${OUT}"/>${cuteMouth(y + r * 0.44, r * 0.13)}`;
+    return `${mir(cuteEye(100 - r * 0.42, y - r * 0.02, er, iris))}${blush(100 - r * 0.66, y + r * 0.42, r * 0.17)}${nose}`;
+  }
+  const glow = s === 3;
+  const e = mir(eye(100 - r * 0.42, y - r * 0.02, r * 0.27, iris, glow));
+  const brow = mir(`<path d="M${100 - r * 0.78} ${y - r * 0.36} L${100 - r * 0.14} ${y - r * 0.18}" stroke="${OUT}" stroke-width="${(r * 0.09).toFixed(1)}" stroke-linecap="round"/>`);
+  const mouth =
+    plan === 'bird'
+      ? P(`M100 ${y + r * 0.18} L${100 - r * 0.2} ${y + r * 0.3} L100 ${y + r * 0.62}`, 'url(#gold)', 1.6)
+      : `<path d="M${100 - r * 0.22} ${y + r * 0.46} Q100 ${y + r * 0.56} ${100 + r * 0.22} ${y + r * 0.46}" fill="none" ${sw(1.8)}/>${mir(`<path d="M${100 - r * 0.16} ${y + r * 0.48} l${r * 0.05} ${r * 0.14} l${r * 0.05} ${-r * 0.13}Z" fill="#fff" ${sw(0.8)}/>`)}`;
+  return `${e}${brow}${mouth}`;
+}
+
+/** 耳・角など（頭の形ごと） */
+function ears(plan: Plan, s: number, y: number, r: number): string {
+  const k = s === 1 ? 0.8 : s === 2 ? 1.1 : 1.35;
+  switch (plan) {
+    case 'beast':
+      return s === 1
+        ? mir(`<g transform="rotate(-24 ${100 - r * 0.72} ${y - r * 0.72})"><ellipse cx="${100 - r * 0.72}" cy="${y - r * 0.72}" rx="${r * 0.3}" ry="${r * 0.42}" fill="url(#gB)" ${sw()}/><ellipse cx="${100 - r * 0.72}" cy="${y - r * 0.66}" rx="${r * 0.15}" ry="${r * 0.26}" fill="#ff9aa8" opacity=".7"/></g>`)
+        : mir(path(`M${100 - r * 0.55} ${y - r * 0.6} L${100 - r * 0.95} ${y - r * 1.2 * k} L${100 - r * 0.18} ${y - r * 0.9}Z`, 'url(#gB)'));
+    case 'bug':
+      return mir(`${path(`M${100 - r * 0.3} ${y - r * 0.85} C${100 - r * 0.5} ${y - r * 1.4 * k} ${100 - r * 0.9} ${y - r * 1.5 * k} ${100 - r * 1.05} ${y - r * 1.45 * k}`, 'none', 2.4)}<circle cx="${100 - r * 1.05}" cy="${y - r * 1.45 * k}" r="${r * 0.13}" fill="url(#gA)" ${sw(1.4)}/>`);
+    case 'serpent':
+      return s === 1
+        ? ''
+        : mir(path(`M${100 - r * 0.5} ${y - r * 0.7} C${100 - r * 0.7} ${y - r * 1.2 * k} ${100 - r * 1.05} ${y - r * 1.4 * k} ${100 - r * 1.25} ${y - r * 1.45 * k} C${100 - r * 0.9} ${y - r * 1.1} ${100 - r * 0.6} ${y - r * 0.9} ${100 - r * 0.25} ${y - r * 0.82}Z`, 'url(#gHorn)', 1.6));
+    case 'bird':
+      return path(`M100 ${y - r * 0.9} C96 ${y - r * 1.5 * k} 112 ${y - r * 1.7 * k} 118 ${y - r * 1.6 * k} C110 ${y - r * 1.3} 108 ${y - r * 1.1} 106 ${y - r * 0.92}Z`, 'url(#gA)', 1.5);
+    case 'fish':
+      return mir(path(`M${100 - r * 0.8} ${y - r * 0.2} C${100 - r * 1.3} ${y - r * 0.5 * k} ${100 - r * 1.5} ${y - r * 0.1} ${100 - r * 1.35} ${y + r * 0.3} C${100 - r * 1.15} ${y + r * 0.1} ${100 - r} ${y + r * 0.15} ${100 - r * 0.88} ${y + r * 0.25}Z`, 'url(#gA)', 1.5));
+    case 'plant':
+      const n = s === 1 ? 5 : 7;
+      return Array.from({ length: n }, (_, i) => {
+        const ang = -80 + (160 / (n - 1)) * i;
+        return `<ellipse cx="100" cy="${y - r * 0.95}" rx="${r * 0.2 * k}" ry="${r * 0.42 * k}" transform="rotate(${ang} 100 ${y})" fill="url(#gA)" ${sw(1.4)}/>`;
+      }).join('');
+    case 'golem':
+      return s === 1 ? '' : mir(`<path d="M${100 - r * 0.9} ${y - r * 0.5} L${100 - r * 1.1} ${y - r * 0.9 * k} L${100 - r * 0.55} ${y - r * 0.75}Z" fill="url(#rock)" ${sw(1.5)}/>`);
+    default:
+      return '';
+  }
+}
+
+/** 頭（顔・耳・属性の飾りを含む） */
+function head(sp: GenArt, y: number, r: number): string {
+  const s = sp.stage;
+  const coolShape =
+    sp.plan === 'golem'
+      ? `<path d="M${100 - r} ${y - r * 0.7} Q100 ${y - r * 1.05} ${100 + r} ${y - r * 0.7} L${100 + r * 0.95} ${y + r * 0.6} Q100 ${y + r * 0.95} ${100 - r * 0.95} ${y + r * 0.6}Z" fill="url(#gB)" ${sw()}/>`
+      : P(`M100 ${y - r} C${100 - r * 0.62} ${y - r} ${100 - r} ${y - r * 0.55} ${100 - r} ${y - r * 0.05} C${100 - r} ${y + r * 0.42} ${100 - r * 0.6} ${y + r * 0.78} 100 ${y + r * 0.92}`, 'url(#gB)');
+  const shape = s === 1 ? `<circle cx="100" cy="${y}" r="${r}" fill="url(#gB)" ${sw()}/>` : coolShape;
+  const muzzle = sp.plan === 'beast' || sp.plan === 'serpent' ? `<ellipse cx="100" cy="${y + r * 0.42}" rx="${r * 0.5}" ry="${r * 0.36}" fill="url(#gC)"/>` : '';
+  return `${ears(sp.plan, s, y, r)}${shape}${muzzle}${face(s, y, r, sp.iris, sp.plan)}${featureTop(sp.feature, s, 100, y - r * (sp.plan === 'plant' ? 1.25 : 0.92), sp.accent)}`;
+}
+
+/** 体（頭より後ろに描く部分）。r=0 は頭と体がひとつながりの形で、y は顔の位置 */
+function body(sp: GenArt): { back: string; y: number; r: number } {
+  const s = sp.stage;
+  const B = 'url(#gB)';
+  const C = 'url(#gC)';
+  const A = 'url(#gA)';
+  const feet = (x: number, y: number, rx: number) => mir(`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${rx * 0.62}" fill="${B}" ${sw()}/>`);
+  switch (sp.plan) {
+    case 'beast':
+      if (s === 1)
+        return { back: `${path('M126 158 C150 166 168 148 160 126 C152 140 142 146 130 148Z', B)}<ellipse cx="100" cy="152" rx="34" ry="28" fill="${B}" ${sw()}/><ellipse cx="100" cy="158" rx="19" ry="16" fill="${C}"/>${feet(84, 178, 10)}`, y: 98, r: 46 };
+      return {
+        back: `${path(`M128 150 C156 ${150 - s * 6} 176 ${120 - s * 8} 166 ${96 - s * 6} C158 120 146 136 128 140Z`, B)}${s === 3 ? furRing(100, 96, 46, 40, 40, 14, sp.accent, 5) : ''}
+          ${mir(`${path('M80 140 C76 156 74 170 74 182 L92 182 C92 168 93 154 95 142Z', B)}${claws(83, 183, 0.75)}`)}
+          ${P(`M100 ${s === 3 ? 84 : 92} C80 ${s === 3 ? 84 : 92} 66 108 66 128 C66 146 78 156 100 158`, B)}${P('M100 104 C90 104 82 112 82 126 C84 140 92 148 100 150', C, 1.4)}`,
+        y: s === 3 ? 60 : 66,
+        r: s === 3 ? 34 : 33,
+      };
+    case 'bird':
+      if (s === 1)
+        return { back: `${mir(`<ellipse cx="54" cy="124" rx="15" ry="9" transform="rotate(-28 54 124)" fill="${A}" ${sw()}/>`)}${mir(path('M90 160 L88 178 M88 178 L82 182 M88 178 L94 182', 'none', 2.5, 'stroke="#e0901a"'))}<circle cx="100" cy="122" r="48" fill="${B}" ${sw()}/><ellipse cx="100" cy="142" rx="26" ry="20" fill="${C}" opacity=".9"/>`, y: 112, r: 0 };
+      return {
+        back: `${mir(path(`M86 112 C${60 - s * 10} ${90 - s * 12} ${30 - s * 8} ${70 - s * 10} ${12 - s * 4} ${78 - s * 14} C26 100 34 118 48 132 C40 136 30 142 ${22 - s * 2} 148 C46 152 66 150 84 144Z`, A))}
+          ${mir([0, 1, 2].map((i) => `<path d="M${40 - i * 8 - s * 3} ${110 + i * 10} L${66 - i * 4} ${122 + i * 6}" stroke="${OUT}" stroke-width="1" opacity=".4"/>`).join(''))}
+          ${mir(path('M90 168 L86 184 M86 184 L78 188 M86 184 L86 190 M86 184 L94 188', 'none', 3, 'stroke="#d8801a"'))}
+          <ellipse cx="100" cy="132" rx="${30 + s * 3}" ry="${40 + s * 2}" fill="${B}" ${sw()}/><ellipse cx="100" cy="142" rx="${18 + s * 2}" ry="28" fill="${C}"/>`,
+        y: s === 3 ? 72 : 76,
+        r: 30,
+      };
+    case 'fish':
+      if (s === 1)
+        return { back: `${mir(path('M58 128 C40 120 30 128 30 142 C42 140 52 140 60 140Z', A))}${path('M100 66 C110 52 126 50 132 58 C120 62 112 70 108 78Z', A)}<circle cx="100" cy="118" r="50" fill="${B}" ${sw()}/><ellipse cx="100" cy="140" rx="30" ry="20" fill="${C}" opacity=".9"/>`, y: 112, r: 0 };
+      return {
+        back: `${mir(path(`M64 120 C${40 - s * 6} ${100 - s * 6} ${22 - s * 6} 110 ${18 - s * 4} 132 C38 134 50 140 62 146Z`, A))}
+          ${path(`M100 ${60 - s * 6} C112 ${40 - s * 10} 136 ${34 - s * 8} 150 ${40 - s * 6} C132 50 122 62 116 80Z`, A)}
+          ${mir(path('M86 166 C80 178 70 184 60 186 C72 188 86 186 94 180Z', A))}
+          ${P(`M100 ${70 - s * 2} C76 ${74 - s * 2} 60 100 60 126 C60 152 78 172 100 176`, B)}${P('M100 116 C88 116 76 126 74 140 C78 158 90 166 100 168', C, 1.4)}
+          ${[0, 1, 2].map((i) => `<path d="M${80 + i * 4} ${132 + i * 8} Q100 ${126 + i * 8} ${120 - i * 4} ${132 + i * 8}" stroke="${OUT}" stroke-width="1" fill="none" opacity=".3"/>`).join('')}`,
+        y: 106,
+        r: 0,
+      };
+    case 'serpent':
+      if (s === 1)
+        return { back: `${path('M128 164 C156 170 172 154 164 134 C156 148 144 152 132 154Z', B)}<ellipse cx="100" cy="158" rx="40" ry="24" fill="${B}" ${sw()}/><ellipse cx="100" cy="164" rx="24" ry="13" fill="${C}"/>`, y: 104, r: 44 };
+      return {
+        back: `${s === 3 ? mir(path('M84 112 C60 80 30 64 10 70 C24 84 30 98 32 112 C40 106 50 104 60 108 C56 118 58 128 64 136Z', A)) : ''}
+          <ellipse cx="100" cy="166" rx="${58 + s * 4}" ry="20" fill="${B}" ${sw()}/><ellipse cx="100" cy="166" rx="${36 + s * 4}" ry="10" fill="${C}"/>
+          ${path('M86 160 C78 140 80 116 88 98 L112 98 C120 116 122 140 114 160Z', B)}${path('M92 158 C88 140 90 120 95 104 L105 104 C110 120 112 140 108 158Z', C, 1.2)}
+          ${mir([0, 1, 2, 3].map((i) => `<path d="M${86 - i * 0.5} ${110 + i * 12} l-8 -4 l4 8Z" fill="${A}" ${sw(1)}/>`).join(''))}`,
+        y: s === 3 ? 66 : 70,
+        r: 32,
+      };
+    case 'bug':
+      if (s === 1)
+        return { back: `${mir(`<ellipse cx="74" cy="168" rx="10" ry="6" fill="${B}" ${sw(1.5)}/>`)}<ellipse cx="100" cy="156" rx="30" ry="22" fill="${B}" ${sw()}/>${[0, 1, 2].map((i) => `<path d="M76 ${150 + i * 7} Q100 ${146 + i * 7} 124 ${150 + i * 7}" stroke="${OUT}" stroke-width="1.2" fill="none" opacity=".45"/>`).join('')}`, y: 104, r: 44 };
+      return {
+        back: `${mir(`<ellipse cx="${56 - s * 4}" cy="${100 - s * 4}" rx="${30 + s * 6}" ry="${20 + s * 4}" transform="rotate(-30 ${56 - s * 4} ${100 - s * 4})" fill="${A}" fill-opacity=".85" ${sw(1.6)}/><ellipse cx="${62 - s * 2}" cy="140" rx="${22 + s * 4}" ry="${14 + s * 2}" transform="rotate(24 ${62 - s * 2} 140)" fill="${A}" fill-opacity=".7" ${sw(1.4)}/>`)}
+          ${mir(`<circle cx="${60 - s * 4}" cy="${96 - s * 4}" r="${6 + s * 2}" fill="${C}" opacity=".9"/>`)}
+          ${mir([0, 1, 2].map((i) => path(`M90 ${130 + i * 12} L${72 - i * 2} ${140 + i * 14} L${68 - i * 2} ${158 + i * 10}`, 'none', 2.2)).join(''))}
+          <ellipse cx="100" cy="140" rx="22" ry="34" fill="${B}" ${sw()}/>${[0, 1, 2, 3].map((i) => `<path d="M82 ${126 + i * 9} Q100 ${122 + i * 9} 118 ${126 + i * 9}" stroke="${OUT}" stroke-width="1.2" fill="none" opacity=".45"/>`).join('')}`,
+        y: 82,
+        r: 30,
+      };
+    case 'blob':
+      if (s === 1) return { back: `${P('M100 64 C70 76 52 108 52 138 C52 166 72 182 100 182', B)}${P('M100 120 C84 120 72 132 72 150 C74 168 86 176 100 176', C, 1.2)}`, y: 124, r: 0 };
+      return {
+        back: `${mir(path('M60 130 C40 128 30 140 30 152 C42 150 52 152 60 156Z', B))}${P('M100 42 C64 56 44 100 44 136 C44 168 66 186 100 186', B)}${P('M100 116 C80 116 66 132 66 152 C68 172 84 180 100 180', C, 1.2)}`,
+        y: 110,
+        r: 0,
+      };
+    case 'golem':
+      if (s === 1)
+        return { back: `${feet(82, 178, 11)}<ellipse cx="100" cy="124" rx="52" ry="54" fill="${B}" ${sw()}/>${[[76, 150, 6], [126, 136, 5], [110, 166, 4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${tone(sp.body, -0.2)}" opacity=".6"/>`).join('')}`, y: 118, r: 0 };
+      return {
+        back: `${mir(`${path(`M68 ${100 - s * 2} C${46 - s * 6} 100 ${36 - s * 6} 122 ${38 - s * 6} 146 C${44 - s * 4} 156 58 158 66 150Z`, B)}${path(`M${38 - s * 6} 146 L${30 - s * 6} 162 L${50 - s * 4} 164 L56 152Z`, 'url(#rock)', 1.6)}`)}
+          ${mir(path('M78 148 L74 182 L96 182 L96 150Z', B))}
+          <path d="M${60 - s * 2} 92 L${140 + s * 2} 92 L${134 + s * 2} 156 L${66 - s * 2} 156Z" fill="${B}" ${sw()}/>
+          <path d="M80 104 L120 104 L116 140 L84 140Z" fill="${C}" opacity=".85"/>
+          ${s === 3 ? mir([[70, 96, 26], [62, 120, 20]].map(([x, y, h]) => `<path d="M${x - 6} ${y} L${x - 2} ${y - h} L${x + 6} ${y}Z" fill="url(#gGem)" ${sw(1.4)}/>`).join('')) : ''}`,
+        y: 70,
+        r: 30,
+      };
+    case 'plant':
+      if (s === 1)
+        return { back: `${mir(`<path d="M86 172 C80 180 72 184 64 186 M92 176 C90 182 86 188 82 192" stroke="#7a5a32" stroke-width="3.5" fill="none"/>`)}<ellipse cx="100" cy="156" rx="30" ry="26" fill="url(#gLeaf)" ${sw()}/>${mir(leaf(78, 150, 24, 10, -70, '#5cc04a'))}`, y: 108, r: 40 };
+      return {
+        back: `${mir(`<path d="M86 172 C78 182 66 186 54 190 M92 178 C88 186 82 192 76 196" stroke="#7a5a32" stroke-width="4" fill="none"/>`)}
+          ${mir(`${leaf(80, 130, 40 + s * 6, 14, -60, '#4cae3a')}${leaf(84, 150, 34 + s * 4, 12, -100, '#3f9a3a')}`)}
+          ${P('M100 96 C86 98 76 112 72 130 C66 152 70 170 100 180', 'url(#gLeaf)')}
+          ${mir(`<ellipse cx="78" cy="150" rx="${18 + s * 3}" ry="30" transform="rotate(14 78 150)" fill="${A}" fill-opacity=".9" ${sw(1.4)}/>`)}`,
+        y: 72,
+        r: 32,
+      };
+    case 'sprite':
+      if (s === 1)
+        return { back: `${mir(path('M70 138 C58 142 52 152 54 160 C62 158 70 154 76 148Z', B))}<path d="M100 132 C82 132 74 146 74 160 C78 172 88 180 100 184 C112 180 122 172 126 160 C126 146 118 132 100 132Z" fill="${B}" ${sw()}/>`, y: 102, r: 42 };
+      return {
+        back: `${mir(path(`M84 112 C${62 - s * 6} ${96 - s * 6} ${40 - s * 8} ${96 - s * 4} ${26 - s * 6} ${108 - s * 4} C44 116 58 122 78 130Z`, A, 1.5, 'fill-opacity=".85"'))}
+          ${P(`M100 100 C84 102 76 116 72 134 C66 156 64 172 ${s === 3 ? 56 : 62} 186 C78 190 90 188 100 184`, B)}
+          ${P('M100 112 C92 114 86 124 84 140 C82 160 84 174 100 178', C, 1.2)}
+          ${mir(`<path d="M74 132 C62 140 56 152 56 164 C62 160 68 156 76 152Z" fill="${B}" ${sw(1.5)}/>`)}`,
+        y: 72,
+        r: 32,
+      };
+    case 'turtle':
+      if (s === 1)
+        return { back: `${feet(78, 176, 11)}<path d="M50 150 C50 112 74 92 100 92 C126 92 150 112 150 150Z" fill="${A}" ${sw()}/>${[[82, 116], [118, 116], [100, 106], [100, 132], [70, 140], [130, 140]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8" fill="${tone(sp.accent, 0.2)}" ${sw(1.2)}/>`).join('')}<ellipse cx="100" cy="156" rx="46" ry="16" fill="${C}" ${sw(1.5)}/>`, y: 114, r: 32 };
+      return {
+        back: `${feet(70, 178, 14)}
+          <path d="M${36 - s * 4} 160 C${36 - s * 4} 104 64 ${76 - s * 6} 100 ${76 - s * 6} C136 ${76 - s * 6} ${164 + s * 4} 104 ${164 + s * 4} 160Z" fill="${A}" ${sw()}/>
+          ${[[74, 112], [126, 112], [100, 96], [100, 132], [60, 140], [140, 140]].map(([x, y]) => `<path d="M${x - 10} ${y} L${x} ${y - 9} L${x + 10} ${y} L${x} ${y + 9}Z" fill="${tone(sp.accent, 0.15)}" ${sw(1.2)}/>`).join('')}
+          ${s === 3 ? `${mir(`<path d="M64 96 L60 72 L74 92Z" fill="url(#rock)" ${sw(1.4)}/>`)}<path d="M100 ${70 - s * 6} L100 ${44 - s * 6}" stroke="#6a4a2a" stroke-width="4"/>${leaf(100, 48 - s * 6, 24, 12, -30, '#4cae3a')}${leaf(100, 48 - s * 6, 24, 12, 30, '#3f9a3a')}` : mir(`<path d="M70 98 L66 82 L80 94Z" fill="url(#rock)" ${sw(1.4)}/>`)}
+          <ellipse cx="100" cy="164" rx="58" ry="16" fill="${C}" ${sw(1.5)}/>`,
+        y: 124,
+        r: 28,
+      };
+  }
+}
+
+function genRecipe(sp: GenArt): string {
+  const b = body(sp);
+  const s = sp.stage;
+  // 頭と体がひとつながりの形（ひな鳥・魚・ぷにぷに・岩のこども）は、体の上に顔と飾りだけを描く
+  const top = b.y - (sp.plan === 'blob' ? (s === 1 ? 58 : 66) : 50);
+  const merged = `${sp.plan === 'fish' && s > 1 ? ears('fish', s, b.y, 34) : ''}${sp.plan === 'bird' ? ears('bird', Math.max(2, s), b.y - 8, 30) : ''}${face(s, b.y, 40, sp.iris, sp.plan)}${featureTop(sp.feature, s, 100, top, sp.accent)}`;
+  const top2 = b.r === 0 ? merged : head(sp, b.y, b.r);
+  const defs =
+    rad('gB', [tone(sp.body, 0.45), sp.body, tone(sp.body, -0.42)]) +
+    rad('gC', [tone(sp.belly, 0.4), sp.belly, tone(sp.belly, -0.2)]) +
+    rad('gA', [tone(sp.accent, 0.4), sp.accent, tone(sp.accent, -0.4)]) +
+    rad('gHorn', ['#fffaf0', '#d8c8a8', '#7a6a4a']) +
+    rad('gGem', ['#ffffff', tone(sp.accent, 0.3), tone(sp.accent, -0.3)]) +
+    lin('gTide', ['#e8fbff', '#7ad0f8', '#2a7ad0'], 0, 1, 0, 0) +
+    lin('gLeaf', ['#d2f8a8', '#5cc04a', '#2f7a2a'], 0, 0, 0, 1) +
+    rad('gAura', [`${tone(sp.accent, 0.5)}cc`, `${sp.accent}33`, `${sp.accent}00`], '50%', '50%', '50%');
+  const glowParts = s === 3 ? auraFx(tone(sp.accent, 0.3)) : '';
+  const sparkles = s === 3 ? [[26, 36], [174, 40], [20, 120], [182, 128]].map(([x, y]) => sparkle(x, y, 5, tone(sp.accent, 0.6))).join('') : '';
+  return svg(`${glowParts}${sparkles}${shadow(s === 1 ? 44 : 56)}${b.back}${top2}`, defs);
+}
+
+for (const [id, spec] of Object.entries(GEN_ART)) MONSTER_ART[id] = () => genRecipe(spec);
 
 const cache = new Map<string, string>();
 

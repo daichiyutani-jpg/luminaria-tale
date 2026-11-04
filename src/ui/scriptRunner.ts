@@ -25,6 +25,10 @@ export interface ScriptHost {
   mapName(): string;
   setRespawn(): void;
   chapterClear(): Promise<void>;
+  /** ジムリーダーとの勝負（false は負けて中断） */
+  gymBattle(n: number): Promise<boolean>;
+  travel(): Promise<void>;
+  ending(): Promise<void>;
 }
 
 export function partnerName(): string {
@@ -96,6 +100,10 @@ async function runCmds(cmds: Cmd[], host: ScriptHost): Promise<boolean> {
       if (!(await runCmds(checkCondition(save, c.if) ? c.then : (c.else ?? []), host))) return false;
     } else if ('se' in c) audio.se(c.se as SeId);
     else if ('chapterClear' in c) await host.chapterClear();
+    else if ('gym' in c) {
+      if (!(await host.gymBattle(c.gym))) return false;
+    } else if ('travel' in c) await host.travel();
+    else if ('ending' in c) await host.ending();
   }
   return true;
 }

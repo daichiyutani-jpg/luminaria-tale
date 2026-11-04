@@ -1,3 +1,5 @@
+import { WORLD_TRAINERS } from './world';
+
 export interface TrainerDef {
   id: string;
   name: string;
@@ -42,6 +44,8 @@ const list: TrainerDef[] = [
     intro: 'この灯籠柱には さわらせないよ！', defeat: 'ああ、灯がともってしまう……！', smart: 0.7,
   },
 ];
+
+list.push(...WORLD_TRAINERS);
 
 export const TRAINERS: Record<string, TrainerDef> = Object.fromEntries(list.map((t) => [t.id, t]));
 

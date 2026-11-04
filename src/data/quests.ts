@@ -12,6 +12,16 @@ const list: QuestDef[] = [
     goal: { kind: 'flag', flag: 'boss1_down' }, reward: { money: 1500, items: [['bright_lantern', 3]] }, reportTo: 'ソラネ博士',
   },
   {
+    id: 'main_3', name: '10の灯章', kind: 'main', startFlag: 'boss1_down',
+    description: '島の10の町には それぞれ ジムがある。ジムリーダーに 勝って、灯章を 10個 集めよう。（ひだまり村 → こもれび町 → … → ルミナリア都）',
+    goal: { kind: 'flag', flag: 'all_badges' }, reward: { items: [['star_lantern', 2], ['max_potion', 3]] }, reportTo: 'ソラネ博士',
+  },
+  {
+    id: 'main_4', name: '夜明けの灯', kind: 'main', startFlag: 'all_badges',
+    description: 'ルミナリア都の 北、黒霞の洞窟の 最奥で、静夜団の ヨルが トコヨノヤミ（Lv70）を 目ざめさせた。島に 夜明けを 取りもどそう。',
+    goal: { kind: 'flag', flag: 'final_boss_down' }, reward: { money: 20000, items: [['star_lantern', 3]] }, reportTo: 'ソラネ博士',
+  },
+  {
     id: 'sub_lost_fuwamo', name: 'まいごのモコ', kind: 'sub', startFlag: 'nono_asked',
     description: 'そよかぜ草原のノノが、フワモの「モコ」を探している。草原のどこかにいるらしい。',
     goal: { kind: 'flag', flag: 'moco_returned' }, reward: { items: [['dawn_stone', 1]] }, reportTo: 'ノノ',

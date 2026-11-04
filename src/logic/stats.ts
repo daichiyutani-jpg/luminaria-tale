@@ -1,7 +1,7 @@
 import type { MonsterInstance, Stats, StatKey } from '../core/types';
 import { getSpecies } from '../data/species';
 
-export const MAX_LEVEL = 60;
+export const MAX_LEVEL = 100;
 export const STAT_KEYS: StatKey[] = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
 
 /** 能力値の計算。素質(0〜15)が少しだけ個性を出す。 */

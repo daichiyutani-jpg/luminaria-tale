@@ -52,10 +52,32 @@ const list: MoveDef[] = [
   { id: 'dusk_orb', name: 'たそがれだま', description: '黒い光の玉。かすみ状態にすることがある。', element: 'shade', category: 'special', power: 80, accuracy: 100, pp: 10, target: 'enemy', effect: { status: 'mist', chance: 20 } },
   { id: 'soul_sip', name: 'たましいすすり', description: '与えたダメージの半分だけ回復する。', element: 'shade', category: 'special', power: 60, accuracy: 100, pp: 15, target: 'enemy', effect: { drain: 0.5 } },
   { id: 'nasty_whisper', name: 'あやしいささやき', description: '自分の特攻を2段階上げる。', element: 'shade', category: 'status', power: 0, accuracy: 101, pp: 15, target: 'self', effect: { stages: { spa: 2 } } },
+  // ── 強い技（旅の後半で覚える） ──
+  { id: 'battle_cry', name: 'ときのこえ', description: '大きな声で気合を入れ、攻撃と素早さを1段階上げる。', element: 'neutral', category: 'status', power: 0, accuracy: 101, pp: 15, target: 'self', effect: { stages: { atk: 1, spe: 1 } } },
+  { id: 'quiet_heart', name: 'しずかなこころ', description: '心をしずめ、特攻と特防を1段階上げる。', element: 'neutral', category: 'status', power: 0, accuracy: 101, pp: 15, target: 'self', effect: { stages: { spa: 1, spd: 1 } } },
+  { id: 'full_charge', name: 'ぜんりょくタックル', description: '全身でぶつかる。自分も少し傷つく。', element: 'neutral', category: 'physical', power: 110, accuracy: 95, pp: 10, target: 'enemy', effect: { recoil: 0.25 } },
+  { id: 'roar_wave', name: 'ほえたけるなみ', description: '大声の波で押しつぶす。', element: 'neutral', category: 'special', power: 90, accuracy: 100, pp: 10, target: 'enemy' },
+  { id: 'magma_fist', name: 'マグマのこぶし', description: 'とけた岩の熱をこめて なぐる。', element: 'blaze', category: 'physical', power: 90, accuracy: 100, pp: 15, target: 'enemy', effect: { status: 'burn', chance: 10 } },
+  { id: 'blaze_burst', name: 'ばくえん', description: '大きな炎がはじける。やけどさせることがある。', element: 'blaze', category: 'special', power: 110, accuracy: 85, pp: 5, target: 'enemy', effect: { status: 'burn', chance: 20 } },
+  { id: 'tide_fang', name: 'しおのキバ', description: '海水をまとったキバでかみつく。', element: 'tide', category: 'physical', power: 85, accuracy: 100, pp: 15, target: 'enemy' },
+  { id: 'great_wave', name: 'おおつなみ', description: '見上げるほどの波で のみこむ。', element: 'tide', category: 'special', power: 110, accuracy: 85, pp: 5, target: 'enemy' },
+  { id: 'green_blade', name: 'みどりのやいば', description: '若葉の刃で切りさく。急所に当たりやすい。', element: 'sprout', category: 'physical', power: 90, accuracy: 100, pp: 15, target: 'enemy', effect: { highCrit: true } },
+  { id: 'forest_wrath', name: 'もりのいかり', description: '森じゅうの力をあつめて放つ。', element: 'sprout', category: 'special', power: 110, accuracy: 85, pp: 5, target: 'enemy' },
+  { id: 'volt_claw', name: 'でんげきのツメ', description: '電気をためたツメで切りさく。', element: 'volt', category: 'physical', power: 90, accuracy: 100, pp: 15, target: 'enemy', effect: { status: 'paralyze', chance: 10 } },
+  { id: 'thunder_fall', name: 'いかずちおとし', description: '大きな雷を落とす。まひさせることがある。', element: 'volt', category: 'special', power: 110, accuracy: 80, pp: 5, target: 'enemy', effect: { status: 'paralyze', chance: 30 } },
+  { id: 'gem_beam', name: 'ほうせきこうせん', description: '体の宝石から光線を放つ。', element: 'stone', category: 'special', power: 85, accuracy: 100, pp: 15, target: 'enemy' },
+  { id: 'mountain_break', name: 'やまくずし', description: '山をくずすほどの力でたたきつける。', element: 'stone', category: 'physical', power: 110, accuracy: 85, pp: 5, target: 'enemy' },
+  { id: 'sky_dive', name: 'きゅうこうか', description: '空高くから まっすぐ急降下する。', element: 'gale', category: 'physical', power: 90, accuracy: 100, pp: 15, target: 'enemy' },
+  { id: 'tempest', name: 'おおあらし', description: 'あれくるう大嵐をおこす。', element: 'gale', category: 'special', power: 110, accuracy: 80, pp: 5, target: 'enemy' },
+  { id: 'light_lance', name: 'ひかりのやり', description: '光をかためた やりで突く。', element: 'shine', category: 'physical', power: 90, accuracy: 100, pp: 15, target: 'enemy' },
+  { id: 'sunrise', name: 'ひのでのひかり', description: '夜明けのようなまぶしい光をあびせる。', element: 'shine', category: 'special', power: 110, accuracy: 85, pp: 5, target: 'enemy' },
+  { id: 'night_claw', name: 'よるのツメ', description: '闇にまぎれて切りさく。急所に当たりやすい。', element: 'shade', category: 'physical', power: 90, accuracy: 100, pp: 15, target: 'enemy', effect: { highCrit: true } },
+  { id: 'abyss', name: 'しんえんのやみ', description: '底なしの闇に引きずりこむ。', element: 'shade', category: 'special', power: 110, accuracy: 85, pp: 5, target: 'enemy', effect: { status: 'mist', chance: 20 } },
   // 使える技が無い時の最後の手段
   { id: 'struggle', name: 'わるあがき', description: '技を使い切った時の最後の手段。自分も少し傷つく。', element: 'neutral', category: 'physical', power: 40, accuracy: 101, pp: 1, target: 'enemy', effect: { recoil: 0.25 } },
   // ボス専用
   { id: 'black_haze', name: 'くろがすみ', description: '黒霞を吐き出す。どくにすることがある。', element: 'shade', category: 'special', power: 70, accuracy: 100, pp: 15, target: 'enemy', effect: { status: 'poison', chance: 30 } },
+  { id: 'tokoyo_night', name: 'とこよのよる', description: '明けることのない夜を よびよせる。', element: 'shade', category: 'special', power: 120, accuracy: 90, pp: 5, target: 'enemy', effect: { status: 'mist', chance: 30 } },
   { id: 'firefly_storm', name: 'ほたるあらし', description: '無数の光の粒が吹き荒れる。', element: 'shine', category: 'special', power: 75, accuracy: 95, pp: 10, target: 'enemy' },
 ];
 

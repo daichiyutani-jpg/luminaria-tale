@@ -37,6 +37,8 @@ import { displayName } from '../logic/monster';
 import { mathRng } from '../logic/rng';
 import { maxHp } from '../logic/stats';
 import type { Backdrop, BattleScene } from '../scenes/BattleScene';
+import type { BattleDriver, BattleOpponent, VersusEnd } from '../net/match';
+import { confirm } from './dialog';
 import { h, uiRoot } from './dom';
 import { promptLearnMove } from './growth';
 
@@ -56,6 +58,41 @@ export interface BattleOutcome {
 }
 
 const SPEED_MS: Record<1 | 2 | 3, number> = { 1: 1200, 2: 750, 3: 380 };
+
+/** 対人戦・QRチーム対戦（セーブは一切変えない：経験値・お金・捕獲・道具なし） */
+export interface VersusConfig {
+  driver: BattleDriver;
+  opponent: BattleOpponent;
+  backdrop: Backdrop;
+  /** はじめの あいさつ */
+  intro: string;
+}
+
+export interface VersusOutcome {
+  result: 'win' | 'lose' | 'none';
+  /** 勝負が ふつうに終わらなかった理由（こうさん・切断など） */
+  end?: VersusEnd | { kind: 'surrender-self' };
+}
+
+export async function runVersusBattle(game: Phaser.Game, cfg: VersusConfig): Promise<VersusOutcome> {
+  const state = cfg.driver.view;
+  const fieldAwake = game.scene.isActive('field');
+  if (fieldAwake) game.scene.sleep('field');
+  const fast = () => session.settings.skipAnimations || session.settings.battleSpeed === 3;
+  await new Promise<void>((resolve) => {
+    game.scene.run('battle', { backdrop: cfg.backdrop, enemyArt: getSpecies(active(state, 1).speciesId).art, playerArt: null, fast: fast(), onReady: resolve });
+  });
+  const scene = game.scene.getScene('battle') as BattleScene;
+  audio.playBgm('battle');
+  const ui = new BattleView(state, scene, cfg.driver, cfg.opponent);
+  try {
+    return await ui.runVersus(cfg);
+  } finally {
+    ui.destroy();
+    game.scene.stop('battle');
+    if (fieldAwake) game.scene.wake('field');
+  }
+}
 
 export async function runBattle(game: Phaser.Game, cfg: BattleConfig): Promise<BattleOutcome> {
   const save = session.data;
@@ -94,6 +131,8 @@ class BattleView {
   constructor(
     private state: BattleState,
     private scene: BattleScene,
+    private driver: BattleDriver | null = null,
+    private versus: BattleOpponent | null = null,
   ) {
     this.enemyPanel = h('div', { class: 'bpanel enemy' });
     this.playerPanel = h('div', { class: 'bpanel player' });
@@ -227,7 +266,7 @@ class BattleView {
           this.renderPanel(e.side);
           if (e.side === 0) this.playerPanel.style.visibility = 'visible';
           await this.scene.sendOut(e.side, getSpecies(active(this.state, e.side).speciesId).art);
-          if (e.side === 1) markSeen(session.data, active(this.state, 1).speciesId);
+          if (e.side === 1 && !this.versus) markSeen(session.data, active(this.state, 1).speciesId);
           break;
         case 'status':
           if (e.status) {
@@ -280,6 +319,18 @@ class BattleView {
         else resolve(r);
       };
       const wild = canCapture(this.state);
+      if (this.versus) {
+        this.setCmd(
+          h(
+            'div',
+            { class: 'bcmd' },
+            h('button', { class: 'btn primary wide', onClick: pick(() => this.moveMenu()) }, '⚔ たたかう'),
+            h('button', { class: 'btn blue', onClick: pick(() => this.partyMenu(false)) }, '🔄 なかま'),
+            h('button', { class: 'btn ghost', onClick: () => { audio.se('ok'); resolve({ type: 'run' }); } }, '🏳 こうさん'),
+          ),
+        );
+        return;
+      }
       this.setCmd(
         h(
           'div',
@@ -477,6 +528,92 @@ class BattleView {
       await this.play(resolveTurn(st, [action, enemyAction], mathRng));
     }
     return this.finish(cfg);
+  }
+
+  // ── 対人戦・QRチーム対戦 ─────────────────
+  async runVersus(cfg: VersusConfig): Promise<VersusOutcome> {
+    const st = this.state;
+    const opp = this.versus!;
+    const driver = this.driver!;
+    let end: VersusOutcome['end'];
+    const endP = opp.ended.then((e) => ({ end: e }));
+    const race = <T>(p: Promise<T>) => Promise.race([p.then((v) => ({ v })), endP]);
+    this.setCmd();
+    await this.message(cfg.intro);
+    await this.message(`${opp.name}は ${displayName(active(st, 1))}を くりだした！`);
+    await this.play([{ t: 'send', side: 0, index: st.sides[0].active }]);
+    await this.message(`いけっ、${displayName(active(st, 0))}！`);
+
+    while (!st.result) {
+      if (st.needsSwitch[0] || st.needsSwitch[1]) {
+        let mine: number | null = null;
+        if (st.needsSwitch[0]) {
+          const r = await race(this.partyMenu(true));
+          if ('end' in r) {
+            end = r.end;
+            break;
+          }
+          if (r.v !== 'back' && r.v.type === 'switch') mine = r.v.to;
+        }
+        this.setCmd();
+        if (st.needsSwitch[1]) this.msg.textContent = opp.waitText ? 'あいてが つぎの なかまを えらんでいます…' : '';
+        const r = await race(opp.exchangeSwitch(st, mine));
+        if ('end' in r) {
+          end = r.end;
+          break;
+        }
+        await this.play(driver.switches(mine, r.v));
+        continue;
+      }
+      const r = await race(this.mainCommand());
+      if ('end' in r) {
+        end = r.end;
+        break;
+      }
+      const action = r.v;
+      if (action === 'back') continue;
+      if (action.type === 'run') {
+        if (!(await confirm('こうさん しますか？（この勝負は まけに なります）', 'こうさんする', 'やめる', true))) continue;
+        opp.surrender();
+        end = { kind: 'surrender-self' };
+        break;
+      }
+      this.setCmd();
+      this.msg.textContent = opp.waitText;
+      const theirs = await race(opp.exchangeAction(st, action));
+      if ('end' in theirs) {
+        end = theirs.end;
+        break;
+      }
+      await this.play(driver.turn(action, theirs.v));
+    }
+    return this.finishVersus(opp, end);
+  }
+
+  private async finishVersus(opp: BattleOpponent, end: VersusOutcome['end']): Promise<VersusOutcome> {
+    const st = this.state;
+    this.setCmd();
+    let result: VersusOutcome['result'] = st.result === 'win' ? 'win' : st.result === 'lose' ? 'lose' : 'none';
+    if (end?.kind === 'surrender-self') {
+      result = 'lose';
+      await this.message('あなたは こうさんした。');
+    } else if (end?.kind === 'surrender') {
+      result = 'win';
+      await this.message(`${opp.name}は こうさんした！`);
+    } else if (end) {
+      result = 'none';
+      await this.message(end.text ?? 'つうしんが きれてしまった……', 300);
+      await this.message('この勝負は なかったことに なります。');
+    }
+    if (result === 'win') {
+      audio.playBgm('victory');
+      await this.message(`${opp.name}との 勝負に かった！`, 300);
+    } else if (result === 'lose') {
+      audio.se('lose');
+      await this.message(`${opp.name}との 勝負に まけてしまった……`, 300);
+    }
+    await this.message('（この勝負では けいけんちや おかねは ふえません。なかまの HPも もとどおりです）');
+    return { result, end };
   }
 
   private async finish(cfg: BattleConfig): Promise<BattleOutcome> {

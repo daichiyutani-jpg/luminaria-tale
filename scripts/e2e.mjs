@@ -312,6 +312,11 @@ try {
       for (const m of s.party) m.hp = Math.max(m.hp, 1);
       void window.__game.app.onWildEncounter(window.__game.app.field, 'fuwamo', 3);
     });
+    // 始まりの文章が出ていれば送りながら、コマンドが出るのを待つ
+    for (let i = 0; i < 80 && !(await page.locator('.battle-ui button', { hasText: 'つかまえる' }).isVisible().catch(() => false)); i++) {
+      if (i > 4) await page.evaluate(() => document.querySelector('.dialog-layer .msg-box')?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })));
+      await page.waitForTimeout(250);
+    }
     await page.locator('.battle-ui button', { hasText: 'つかまえる' }).waitFor({ timeout: 20_000 });
     if (tries === 0) await shot('08-wild');
     if (tries === 0) {
@@ -426,11 +431,143 @@ try {
   await shot('13-settings');
   await page.getByRole('button', { name: /もどる/ }).first().click();
 
-  // 13. つうしん（未実装）は準備中で、通信しない
+  // 13. つうしん：画面を開くだけでは通信しない（QR の部品はこの時に読みこむ。オフラインでも Service Worker から読める）
   await page.getByRole('button', { name: /つうしん/ }).click();
-  await page.waitForTimeout(500);
-  check('「つうしん」は準備中と表示される', (await page.locator('.screen').last().textContent()).includes('じゅんびちゅう'));
-  await shot('14-online-wip');
+  await page.locator('.screen', { hasText: 'QRチーム たいせん' }).waitFor({ timeout: 10_000 });
+  check('「つうしん」画面が オフラインでも開ける（QRの部品も読みこめる）', (await page.locator('.screen').last().textContent()).includes('ちょくせつ たいせん'));
+  await shot('14-online');
+
+  // 14. QRチーム対戦：自分のチームQR → そのコードを はりつけて CPU と対戦（セーブは変わらない）
+  const linkAuto = (pg, maxMs = 180000) =>
+    pg.evaluate(async (maxMs) => {
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const log = [];
+      let seen = false;
+      let gone = 0;
+      const t0 = Date.now();
+      while (Date.now() - t0 < maxMs) {
+        await sleep(150);
+        const m = document.querySelector('.dialog-layer .msg-box');
+        if (m) {
+          log.push(m.textContent.replace('▼', ''));
+          m.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+          continue;
+        }
+        const dlg = [...document.querySelectorAll('.dialog-layer button:not([disabled])')];
+        if (dlg.length) {
+          (dlg.find((b) => /たたかう|はい|OK/.test(b.textContent)) ?? dlg[0]).click();
+          continue;
+        }
+        const bu = document.querySelector('.battle-ui');
+        if (!bu) {
+          if (seen && ++gone > 8) break;
+          continue;
+        }
+        seen = true;
+        gone = 0;
+        const bm = bu.querySelector('.bmsg');
+        const bt = bm?.textContent;
+        if (bt && log[log.length - 1] !== 'B:' + bt) log.push('B:' + bt);
+        bm?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+        const btns = [...bu.querySelectorAll('button:not([disabled])')];
+        const mv = btns.filter((b) => b.classList.contains('bmove'));
+        if (mv.length) {
+          mv[0].click();
+          continue;
+        }
+        const fight = btns.find((b) => b.textContent.includes('たたかう'));
+        if (fight) {
+          fight.click();
+          continue;
+        }
+        const mon = btns.find((b) => b.textContent.includes('Lv'));
+        if (mon) mon.click();
+      }
+      return { seen, log };
+    }, maxMs);
+  const saveSnap = (pg) =>
+    pg.evaluate(() => {
+      const s = window.__game.session.data;
+      return JSON.stringify({ p: s.party, b: s.box.length, m: s.money, i: s.items, w: s.stats.battlesWon });
+    });
+  const before = await saveSnap(page);
+  await page.getByRole('button', { name: /じぶんの チームQRを みせる/ }).click();
+  const teamCode = await page.locator('.screen').last().locator('textarea.link-code').inputValue();
+  check('チームQR（と コード）が表示される', teamCode.startsWith('LMT1.') && (await page.locator('.screen').last().locator('.link-qr canvas').count()) === 1, `${teamCode.length}もじ`);
+  await shot('15-team-qr');
+  await page.locator('.screen').last().getByRole('button', { name: /もどる/ }).click();
+  await page.getByRole('button', { name: /チームQRを よんで たたかう/ }).click();
+  await page.locator('textarea[aria-label="コードを はりつける"]').fill(teamCode);
+  await page.getByRole('button', { name: /はりつけた コードを よみこむ/ }).click();
+  const ghost = await linkAuto(page);
+  const ghostEnd = ghost.log.filter((t) => t.includes('勝負に')).slice(-1)[0];
+  check('QRチーム対戦を 最後まで戦える', ghost.seen && !!ghostEnd, ghostEnd);
+  check('QRチーム対戦の後も セーブ（なかま・HP・けいけんち・お金・道具）が変わらない', (await saveSnap(page)) === before);
+  check('QRチーム対戦の後は「つうしん」画面に もどる', (await page.locator('.screen').last().textContent()).includes('QRチーム たいせん'));
+
+  // 15. 直接対戦：同じブラウザの2つのタブを、コードの はりつけ（QR の代わり）で つなぐ（STUN なし）
+  // Playwright のオフライン化は WebRTC も止めてしまうので、ここだけ戻す（配信サーバーは停止したまま。外部への通信は引き続き検査する）
+  await context.setOffline(false);
+  const page2 = await context.newPage();
+  page2.on('pageerror', (e) => pageErrors.push('[tab2] ' + String(e)));
+  page2.on('console', (m) => m.type() === 'error' && pageErrors.push('[tab2] ' + m.text()));
+  await page2.goto(ORIGIN + BASE);
+  await page2.waitForFunction(() => !!window.__game, null, { timeout: 30_000 });
+  await page2.locator('.tap-start').click();
+  await page2.getByRole('button', { name: 'つづきから' }).click();
+  await page2.getByRole('button', { name: /スロット1/ }).click();
+  await page2.waitForFunction(() => !!window.__game.app.field, null, { timeout: 10_000 });
+  await page2.waitForTimeout(800);
+  await page2.locator('.gb-pill[aria-label="START"]').click();
+  await page2.getByRole('button', { name: /つうしん/ }).click();
+  await page2.locator('.screen', { hasText: 'QRチーム たいせん' }).waitFor({ timeout: 10_000 });
+  const connect = async (host, guest, roomButton) => {
+    await host.getByRole('button', { name: roomButton }).click();
+    const offer = await host.locator('.screen').last().locator('textarea.link-code').inputValue({ timeout: 20_000 });
+    await guest.getByRole('button', { name: /ともだちの QRを よむ/ }).click();
+    await guest.locator('textarea[aria-label="コードを はりつける"]').fill(offer);
+    await guest.getByRole('button', { name: /はりつけた コードを よみこむ/ }).click();
+    await guest.locator('.screen').last().locator('textarea.link-code').waitFor({ state: 'attached', timeout: 20_000 });
+    const answer = await guest.locator('.screen').last().locator('textarea.link-code').inputValue();
+    await host.getByRole('button', { name: /へんじの QR」を よむ/ }).click();
+    await host.locator('textarea[aria-label="コードを はりつける"]').fill(answer);
+    await host.getByRole('button', { name: /はりつけた コードを よみこむ/ }).click();
+    return { offer, answer };
+  };
+  const codes = await connect(page, page2, /たいせんの へやを つくる/);
+  check('つなぐための コードが 短い（QR が読みやすい）', codes.offer.startsWith('LMO1~') && codes.answer.startsWith('LMA1~') && codes.offer.length < 600 && codes.answer.length < 600, `${codes.offer.length} / ${codes.answer.length}もじ`);
+  const before2 = await saveSnap(page2);
+  const [b1, b2] = await Promise.all([linkAuto(page, 240000), linkAuto(page2, 240000)]);
+  const last1 = b1.log.filter((t) => t.includes('勝負に')).slice(-1)[0] ?? b1.log.slice(-3).join(' / ');
+  const last2 = b2.log.filter((t) => t.includes('勝負に')).slice(-1)[0] ?? b2.log.slice(-3).join(' / ');
+  const oneWins = (a, b) => a.includes('かった') && b.includes('まけて');
+  check('2つのタブが つながり、直接対戦を 最後まで戦える（片方が勝ち、もう片方が負け）', b1.seen && b2.seen && (oneWins(last1, last2) || oneWins(last2, last1)), `${last1} | ${last2}`);
+  check('直接対戦の後も 両方のセーブが変わらない', (await saveSnap(page)) === before && (await saveSnap(page2)) === before2);
+
+  // 16. 交換：2つのタブで1体ずつ だしあって 交換する
+  await page.locator('.screen', { hasText: 'QRチーム たいせん' }).last().waitFor({ timeout: 10_000 });
+  await page2.locator('.screen', { hasText: 'QRチーム たいせん' }).last().waitFor({ timeout: 10_000 });
+  const uids1 = await page.evaluate(() => window.__game.session.data.party.map((m) => m.uid));
+  await connect(page, page2, /こうかんの へやを つくる/);
+  for (const pg of [page, page2]) {
+    await pg.getByRole('button', { name: /だす 灯獣を えらぶ/ }).click({ timeout: 20_000 });
+    await pg.locator('.screen').last().locator('button.mon-card:not([disabled])').last().click();
+  }
+  await page.waitForFunction(() => document.querySelectorAll('.link-offer img').length === 2, null, { timeout: 10_000 });
+  await page2.waitForFunction(() => document.querySelectorAll('.link-offer img').length === 2, null, { timeout: 10_000 });
+  await shot('16-trade');
+  for (const pg of [page, page2]) {
+    await pg.getByRole('button', { name: /この ないようで こうかんする/ }).click();
+    await pg.locator('.dialog-layer button', { hasText: 'こうかんする' }).click();
+  }
+  await page.locator('.dialog-layer .msg-box', { hasText: 'うけとった' }).waitFor({ timeout: 10_000 });
+  const traded = await page.evaluate((old) => {
+    const s = window.__game.session.data;
+    const got = [...s.party, ...s.box].filter((m) => !old.includes(m.uid));
+    return { n: got.length, ot: got[0]?.originalTrainer, party: s.party.length };
+  }, uids1);
+  check('交換が成立し、受け取った灯獣に 新しいID と 元の持ち主が付く', traded.n === 1 && traded.ot === 'テスト' && traded.party >= 1, JSON.stringify(traded));
+  await page2.close();
 
   check('外部ドメインへの通信がない', external.length === 0, external.slice(0, 3).join(', '));
   check('ページのエラーがない', pageErrors.length === 0, pageErrors.slice(0, 3).join(' | '));

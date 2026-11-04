@@ -1,10 +1,11 @@
-# ルミナリア・テイル ～灯獣の島～（試作版 0.1.0）
+# ルミナリア・テイル ～灯獣の島～（0.2.0）
 
 スマホ縦画面で遊ぶ、オリジナルのモンスター育成RPG（PWA）です。
 
 **公開URL：https://daichiyutani-jpg.github.io/luminaria-tale/**
 （`main` に push すると GitHub Actions がテスト → ビルド → GitHub Pages へ自動で公開します）
 「灯獣（ともしびけもの）」を捕まえ、育て、進化させながら、群島ルミナリアを旅します。
+10の町（ジム10）・灯獣100種・ラスボス（Lv70）・クリア後の2周目（ジムリーダーの再戦）まで遊べます。
 
 - 技術：TypeScript + Phaser 4 + Vite（Unity は使っていません）
 - ひとりで遊ぶ部分は **完全オフライン**（サーバーと一切通信しません）
@@ -45,7 +46,7 @@ GitHub Pages などの静的ホスティングにそのまま置けます（`.no
 ## テスト
 
 ```bat
-npm.cmd test            ← ロジックの自動テスト（vitest・53件）
+npm.cmd test            ← ロジックの自動テスト（vitest・77件）
 npm.cmd run typecheck   ← 型チェック
 npm.cmd run build
 npm.cmd run test:e2e    ← 本番ビルドをブラウザ（Edge/Chrome）で動かす総合テスト
