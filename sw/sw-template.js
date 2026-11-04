@@ -57,6 +57,9 @@ self.addEventListener('fetch', (event) => {
     (async () => {
       const cache = await caches.open(CACHE_NAME);
       if (request.mode === 'navigate') {
+        // 攻略ガイド（guide.html）など、ゲーム以外のページはそのページを返す。それ以外はゲーム本体
+        const page = await cache.match(request, { ignoreVary: true, ignoreSearch: true });
+        if (page) return page;
         const cached = await cache.match(INDEX_URL, { ignoreVary: true });
         if (cached) return cached;
         return fetch(request);

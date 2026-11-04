@@ -53,6 +53,8 @@ export default defineConfig({
     target: ['es2020', 'safari15', 'chrome90'],
     assetsInlineLimit: 0,
     chunkSizeWarningLimit: 2500,
+    // ゲーム本体と 完全攻略ガイド（データから自動で作る）
+    rollupOptions: { input: { main: 'index.html', guide: 'guide.html' } },
   },
   server: { host: true },
   test: {

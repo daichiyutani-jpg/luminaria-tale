@@ -3,13 +3,14 @@
 スマホ縦画面で遊ぶ、オリジナルのモンスター育成RPG（PWA）です。
 
 **公開URL：https://daichiyutani-jpg.github.io/luminaria-tale/**
+**完全攻略ガイド：https://daichiyutani-jpg.github.io/luminaria-tale/guide.html**（`guide.html` と `src/guide/`。ゲームのデータから自動で作るので、ゲームを直せばガイドも同じ内容になる）
 （`main` に push すると GitHub Actions がテスト → ビルド → GitHub Pages へ自動で公開します）
 「灯獣（ともしびけもの）」を捕まえ、育て、進化させながら、群島ルミナリアを旅します。
 10の町（ジム10）・灯獣100種・ラスボス（Lv70）・クリア後の2周目（ジムリーダーの再戦）まで遊べます。
 
 - 技術：TypeScript + Phaser 4 + Vite（Unity は使っていません）
 - ひとりで遊ぶ部分は **完全オフライン**（サーバーと一切通信しません）
-- 通信対戦・交換は **設計のみ・未実装**（[docs/ONLINE_DESIGN.md](docs/ONLINE_DESIGN.md)）
+- 通信対戦・交換は QRコードで2台を直接つなぐ方式（サーバーなし。[docs/ONLINE_DESIGN.md](docs/ONLINE_DESIGN.md)）
 - 絵・BGM・効果音は **すべて仮素材**（プログラムで描画・演奏。[docs/ASSETS.md](docs/ASSETS.md)）
 
 ## 起動のしかた（Windows）
@@ -46,7 +47,7 @@ GitHub Pages などの静的ホスティングにそのまま置けます（`.no
 ## テスト
 
 ```bat
-npm.cmd test            ← ロジックの自動テスト（vitest・77件）
+npm.cmd test            ← ロジックの自動テスト（vitest・80件）
 npm.cmd run typecheck   ← 型チェック
 npm.cmd run build
 npm.cmd run test:e2e    ← 本番ビルドをブラウザ（Edge/Chrome）で動かす総合テスト
