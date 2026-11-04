@@ -40,6 +40,8 @@ export interface MoveEffect {
   priority?: number;
   /** 反動（与えたダメージに対する割合） */
   recoil?: number;
+  /** 使ったターンを含めて この数のターン、相手の技（相手が対象のもの）を受けつけない */
+  guard?: number;
 }
 
 export interface MoveDef {

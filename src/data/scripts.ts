@@ -199,7 +199,7 @@ export const SCRIPTS: Record<string, Cmd[]> = {
     { say: '土の中から、大きな かさを かぶった 灯獣が ゆっくりと 立ちあがった！' },
     { who: 'チョンボ', say: '……ワレヲ 目ざめさせたのは そなたか。チカラを 見せてみよ。' },
     {
-      legend: { speciesId: 'chonbo', level: 18 },
+      legend: { speciesId: 'chonbo', level: 45 },
       caught: [{ setFlag: 'chonbo_caught' }, { say: '伝説の灯獣 チョンボが なかまに なった！' }],
       win: [{ say: 'チョンボは 土の中に しずかに もどっていった……。\n（また 古い松を しらべると 会える）' }],
       run: [{ say: 'チョンボは 土の中に しずかに もどっていった……。' }],

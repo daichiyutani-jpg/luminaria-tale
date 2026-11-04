@@ -27,6 +27,8 @@ export interface BattleSide {
   party: MonsterInstance[];
   active: number;
   stages: Stages;
+  /** 「かたくなる」の残りターン（0 で効果なし） */
+  guard?: number;
 }
 
 export interface BattleState {
@@ -221,6 +223,11 @@ function executeMove(state: BattleState, side: SideIndex, moveIndex: number, rng
   ev.push({ t: 'msg', text: `${sideName(state, side)}の ${move.name}！` });
 
   const targetSide: SideIndex = move.target === 'self' ? side : foe;
+  // 相手が「かたくなる」の間は、相手に向けた技は効かない
+  if (move.target === 'enemy' && (state.sides[foe].guard ?? 0) > 0) {
+    ev.push({ t: 'msg', text: `${sideName(state, foe)}は かたくなっていて こうげきを うけつけない！` });
+    return;
+  }
   // 命中判定（自分が対象の技と必中技は外れない）
   if (move.target === 'enemy' && move.accuracy <= 100) {
     let acc = move.accuracy * accMult(state.sides[side].stages.acc);
@@ -261,6 +268,15 @@ function executeMove(state: BattleState, side: SideIndex, moveIndex: number, rng
 
   // 補助技
   let did = false;
+  if (eff?.guard) {
+    if ((state.sides[side].guard ?? 0) > 0) {
+      ev.push({ t: 'msg', text: 'しかし もう かたくなっている！' });
+      return;
+    }
+    state.sides[side].guard = eff.guard;
+    ev.push({ t: 'msg', text: `${sideName(state, side)}は かちかちに かたくなった！ ${eff.guard}ターンのあいだ こうげきを うけつけない！` });
+    did = true;
+  }
   if (eff?.heal) {
     const max = maxHp(user);
     if (user.hp < max) {
@@ -341,7 +357,10 @@ function awardExp(state: BattleState, enemy: MonsterInstance, ev: BattleEvent[])
 function finish(state: BattleState, result: BattleResult, ev: BattleEvent[]): void {
   if (state.result) return;
   state.result = result;
-  for (const side of state.sides) side.stages = emptyStages();
+  for (const side of state.sides) {
+    side.stages = emptyStages();
+    side.guard = 0;
+  }
   ev.push({ t: 'end', result });
 }
 
@@ -352,6 +371,7 @@ function doSwitch(state: BattleState, side: SideIndex, to: number, ev: BattleEve
   if (!state.needsSwitch[side]) ev.push({ t: 'msg', text: side === 0 ? `もどれ、${displayName(active(state, side))}！` : `${s.name}は ${displayName(active(state, side))}を ひっこめた。` });
   s.active = to;
   s.stages = emptyStages();
+  s.guard = 0;
   state.needsSwitch[side] = false;
   ev.push({ t: 'send', side, index: to });
   ev.push({ t: 'msg', text: side === 0 ? `いけっ、${displayName(target)}！` : `${s.name}は ${displayName(target)}を くりだした！` });
@@ -404,6 +424,7 @@ export function aiChooseMove(state: BattleState, side: SideIndex, rng: Rng, smar
       const stab = myEls.includes(mv.element) ? STAB : 1;
       return mv.power * effectiveness(mv.element, foeEls) * stab * (Math.min(100, mv.accuracy) / 100);
     }
+    if (e?.guard) return (state.sides[side].guard ?? 0) > 0 ? 0 : me.hp / maxHp(me) < 0.6 ? 90 : 30;
     if (e?.heal) return me.hp / maxHp(me) < 0.45 ? 120 : 5;
     if (e?.status) return foe.status ? 1 : 55;
     if (e?.stages) {
@@ -572,6 +593,13 @@ export function resolveTurn(state: BattleState, actions: [Action, Action], rng: 
       endOfTurnStatus(state, side, ev);
     }
     handleFaints(state, ev);
+    // 「かたくなる」の残りターンを減らす
+    for (const side of order) {
+      const s = state.sides[side];
+      if (!s.guard) continue;
+      s.guard--;
+      if (s.guard === 0 && active(state, side).hp > 0) ev.push({ t: 'msg', text: `${sideName(state, side)}の かたさが もとに もどった。` });
+    }
   }
   return ev;
 }

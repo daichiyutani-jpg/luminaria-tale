@@ -215,7 +215,7 @@ const list: SpeciesDef[] = [
     ecology: '森の灯脈が いちばん澄んだ夜にだけ 姿をあらわす。生まれつき完成した姿で、進化はしない。香りをかいだ者は 深い眠りに落ちるという。',
     elements: ['sprout', 'stone'], baseStats: { hp: 100, atk: 92, def: 108, spa: 96, spd: 104, spe: 70 },
     baseExp: 260, catchRate: 18, rarity: 'legend', role: 'tank', habitat: 'ほたる森の奥（ホタルノオウを鎮めた後）', art: 'chonbo', color: '#a8743a',
-    learnset: [[1, 'matsu_kaori'], [1, 'sap_drain'], [1, 'iron_shell'], [1, 'rock_drill'], [24, 'thorn_rush'], [30, 'spring_heal']],
+    learnset: [[1, 'sap_drain'], [1, 'iron_shell'], [1, 'rock_drill'], [24, 'thorn_rush'], [30, 'spring_heal'], [40, 'chonbo_katakunaru'], [45, 'matsu_kaori']],
   },
 ];
 

@@ -295,6 +295,38 @@ describe('伝説の灯獣 チョンボ', () => {
     save.flags.chonbo_caught = true;
     expect(checkCondition(save, npc!.showIf!)).toBe(false);
   });
+  it('Lv45 で出てきて、専用技「かたくなる」「まつのかおり」を覚えている', () => {
+    const legend = SCRIPTS.legend_chonbo.find((c) => 'legend' in c) as Extract<Cmd, { legend: unknown }>;
+    expect(legend.legend.level).toBe(45);
+    const c = mk('chonbo', 45);
+    const ids = c.moves.map((m) => m.id);
+    expect(ids).toContain('chonbo_katakunaru');
+    expect(ids).toContain('matsu_kaori');
+    expect(MOVES.chonbo_katakunaru.name).toBe('かたくなる');
+    expect(Object.values(MOVES).filter((m) => m.name === 'かたくなる')).toHaveLength(1);
+  });
+  it('「かたくなる」は使ったターンから3ターン、相手の技を受けつけない', () => {
+    const c = mk('chonbo', 45);
+    const foe = mk('hinokoro', 45);
+    const b = createBattle('wild', { name: 'A', party: [c] }, { name: 'B', party: [foe] });
+    const g = c.moves.findIndex((m) => m.id === 'chonbo_katakunaru');
+    const atk = foe.moves.findIndex((m) => MOVES[m.id].category !== 'status' && MOVES[m.id].target === 'enemy');
+    const full = c.hp;
+    const rng = seededRng(3);
+    // 1ターン目：先に かたくなる → 相手の攻撃は効かない
+    resolveTurn(b, [{ type: 'move', index: g }, { type: 'move', index: atk }], rng);
+    expect(c.hp).toBe(full);
+    // 2・3ターン目：まだ効かない（もう一度 使っても 何も起こらない）
+    resolveTurn(b, [{ type: 'move', index: g }, { type: 'move', index: atk }], rng);
+    resolveTurn(b, [{ type: 'move', index: g }, { type: 'move', index: atk }], rng);
+    expect(c.hp).toBe(full);
+    expect(b.sides[0].guard).toBe(0);
+    // 4ターン目：効果が切れて ダメージを受ける
+    const hit = c.moves.findIndex((m) => m.id === 'thorn_rush');
+    const r2 = seededRng(9);
+    for (let i = 0; i < 3 && c.hp === full; i++) resolveTurn(b, [{ type: 'move', index: hit }, { type: 'move', index: atk }], r2);
+    expect(c.hp).toBeLessThan(full);
+  });
 });
 
 describe('捕獲', () => {

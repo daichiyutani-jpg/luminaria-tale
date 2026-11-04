@@ -5,7 +5,7 @@ const list: MoveDef[] = [
   { id: 'tackle', name: 'たいあたり', description: '体ごとぶつかる。', element: 'neutral', category: 'physical', power: 40, accuracy: 100, pp: 35, target: 'enemy' },
   { id: 'quick_dash', name: 'すばやダッシュ', description: '必ず先に動ける体当たり。', element: 'neutral', category: 'physical', power: 40, accuracy: 100, pp: 25, target: 'enemy', effect: { priority: 1 } },
   { id: 'growl_soft', name: 'こわいかお', description: '相手の攻撃を1段階下げる。', element: 'neutral', category: 'status', power: 0, accuracy: 100, pp: 30, target: 'enemy', effect: { stages: { atk: -1 } } },
-  { id: 'harden', name: 'かたくなる', description: '自分の防御を1段階上げる。', element: 'neutral', category: 'status', power: 0, accuracy: 101, pp: 30, target: 'self', effect: { stages: { def: 1 } } },
+  { id: 'harden', name: 'みをかためる', description: '自分の防御を1段階上げる。', element: 'neutral', category: 'status', power: 0, accuracy: 101, pp: 30, target: 'self', effect: { stages: { def: 1 } } },
   { id: 'rest_song', name: 'まどろみのうた', description: '相手をねむらせる。', element: 'neutral', category: 'status', power: 0, accuracy: 60, pp: 15, target: 'enemy', effect: { status: 'sleep' } },
   { id: 'heavy_press', name: 'のしかかり', description: '重い体でのしかかる。まひさせることがある。', element: 'neutral', category: 'physical', power: 75, accuracy: 100, pp: 15, target: 'enemy', effect: { status: 'paralyze', chance: 20 } },
   // ほむら
@@ -24,6 +24,7 @@ const list: MoveDef[] = [
   { id: 'spore_puff', name: 'ねむりごな', description: '相手をねむらせる。', element: 'sprout', category: 'status', power: 0, accuracy: 75, pp: 15, target: 'enemy', effect: { status: 'sleep' } },
   { id: 'thorn_rush', name: 'いばらラッシュ', description: 'トゲのつるで何度も打つ。', element: 'sprout', category: 'physical', power: 85, accuracy: 90, pp: 10, target: 'enemy' },
   { id: 'toxic_pollen', name: 'どくかふん', description: '相手をどくにする。', element: 'sprout', category: 'status', power: 0, accuracy: 90, pp: 20, target: 'enemy', effect: { status: 'poison' } },
+  { id: 'chonbo_katakunaru', name: 'かたくなる', description: '千年の松のように かたくなり、使ったターンから3ターンのあいだ 相手の技を すべて受けつけない。かならず先に出せる。チョンボだけが使える。', element: 'stone', category: 'status', power: 0, accuracy: 101, pp: 5, target: 'self', effect: { guard: 3, priority: 4 } },
   { id: 'matsu_kaori', name: 'まつのかおり', description: '千年の松の香りを放つ。ねむらせることがある。チョンボだけが使える。', element: 'sprout', category: 'special', power: 90, accuracy: 100, pp: 10, target: 'enemy', effect: { status: 'sleep', chance: 20 } },
   // いかずち
   { id: 'spark', name: 'でんきショック', description: '電気を流す。まひさせることがある。', element: 'volt', category: 'special', power: 40, accuracy: 100, pp: 30, target: 'enemy', effect: { status: 'paralyze', chance: 10 } },
