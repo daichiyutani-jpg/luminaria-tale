@@ -1,6 +1,9 @@
 # ルミナリア・テイル ～灯獣の島～（試作版 0.1.0）
 
 スマホ縦画面で遊ぶ、オリジナルのモンスター育成RPG（PWA）です。
+
+**公開URL：https://daichiyutani-jpg.github.io/luminaria-tale/**
+（`main` に push すると GitHub Actions がテスト → ビルド → GitHub Pages へ自動で公開します）
 「灯獣（ともしびけもの）」を捕まえ、育て、進化させながら、群島ルミナリアを旅します。
 
 - 技術：TypeScript + Phaser 4 + Vite（Unity は使っていません）
