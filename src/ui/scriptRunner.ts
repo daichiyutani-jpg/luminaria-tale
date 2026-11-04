@@ -18,6 +18,7 @@ import { elementChip } from './growth';
 export interface ScriptHost {
   trainerBattle(trainerId: string): Promise<'win' | 'lose' | 'lose-ok'>;
   bossBattle(speciesId: string, level: number): Promise<'win' | 'lose'>;
+  legendBattle(speciesId: string, level: number): Promise<'captured' | 'win' | 'run' | 'lose'>;
   openShop(id: string): Promise<void>;
   openBox(): Promise<void>;
   refresh(): void;
@@ -84,6 +85,11 @@ async function runCmds(cmds: Cmd[], host: ScriptHost): Promise<boolean> {
       if (r === 'win') {
         if (c.win && !(await runCmds(c.win, host))) return false;
       } else return false;
+    } else if ('legend' in c) {
+      const r = await host.legendBattle(c.legend.speciesId, c.legend.level);
+      if (r === 'lose') return false;
+      const next = r === 'captured' ? c.caught : r === 'win' ? c.win : c.run;
+      if (next && !(await runCmds(next, host))) return false;
     } else if ('shop' in c) await host.openShop(c.shop);
     else if ('box' in c) await host.openBox();
     else if ('if' in c) {

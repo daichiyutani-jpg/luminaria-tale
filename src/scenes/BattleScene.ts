@@ -43,17 +43,28 @@ export class BattleScene extends Phaser.Scene {
     // 登場演出
     this.enemy.x += this.scale.width;
     this.tweens.add({ targets: this.enemy, x: this.enemyHome.x, duration: this.fast ? 200 : 450, ease: 'Cubic.out' });
-    this.tweens.add({ targets: this.enemy, scaleY: this.enemy.scaleY * 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    this.startBreath();
     this.scale.on('resize', this.onResize, this);
     this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
     this.ready = true;
+  }
+
+  private breath: Phaser.Tweens.Tween | null = null;
+
+  /** 敵がゆっくり息をする動き（大きさが変わったら作り直す） */
+  private startBreath(): void {
+    this.breath?.stop();
+    this.breath = this.tweens.add({ targets: this.enemy, scaleY: this.enemy.scaleX * 1.03, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
   }
 
   private onResize(): void {
     this.layout();
     this.enemy.setPosition(this.enemyHome.x, this.enemyHome.y);
     this.player.setPosition(this.playerHome.x, this.playerHome.y);
+    const visible = this.enemy.alpha > 0.5;
+    this.breath?.stop();
     this.sizeSprites();
+    if (visible) this.startBreath();
   }
 
   private layout(): void {

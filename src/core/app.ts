@@ -458,6 +458,12 @@ class App implements FieldHost {
         const res = await this.battle(scene, { kind: 'boss', enemies: [boss], backdrop: 'boss', bgm: 'boss' });
         return res === 'win' ? 'win' : 'lose';
       },
+      legendBattle: async (speciesId, level) => {
+        const save = session.data;
+        const mon = createMonster(speciesId, level, mathRng, { uid: issueUid(save), caughtAt: scene.map.name, ivs: BOSS_IVS });
+        const res = await this.battle(scene, { kind: 'wild', enemies: [mon], backdrop: 'boss', bgm: 'boss' });
+        return res;
+      },
       openShop: (id) => openShop(id),
       openBox: () => openBox(),
       refresh: () => {

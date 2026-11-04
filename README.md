@@ -45,7 +45,7 @@ GitHub Pages などの静的ホスティングにそのまま置けます（`.no
 ## テスト
 
 ```bat
-npm.cmd test            ← ロジックの自動テスト（vitest・49件）
+npm.cmd test            ← ロジックの自動テスト（vitest・51件）
 npm.cmd run typecheck   ← 型チェック
 npm.cmd run build
 npm.cmd run test:e2e    ← 本番ビルドをブラウザ（Edge/Chrome）で動かす総合テスト

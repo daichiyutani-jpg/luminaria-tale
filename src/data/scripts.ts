@@ -14,6 +14,8 @@ export type Cmd =
   | { chooseStarter: true }
   | { trainer: string; win?: Cmd[]; lose?: Cmd[] }
   | { boss: { speciesId: string; level: number }; win?: Cmd[]; lose?: Cmd[] }
+  /** 伝説の灯獣：捕まえられる・逃げられる戦い */
+  | { legend: { speciesId: string; level: number }; caught?: Cmd[]; win?: Cmd[]; run?: Cmd[] }
   | { shop: string }
   | { box: true }
   | { if: Condition; then: Cmd[]; else?: Cmd[] }
@@ -188,5 +190,19 @@ export const SCRIPTS: Record<string, Cmd[]> = {
       ],
     },
   ],
-  hotaru_calm: [{ who: 'ホタルノオウ', say: '森の灯は もどった。旅の灯守よ、そなたの灯に 祝福を。' }],
+  hotaru_calm: [
+    { who: 'ホタルノオウ', say: '森の灯は もどった。旅の灯守よ、そなたの灯に 祝福を。' },
+    { if: { notFlag: 'chonbo_caught' }, then: [{ who: 'ホタルノオウ', say: '……泉の右の 古い松の根元から、なつかしい 香りが する。千年に一度 目をさます 伝説の灯獣が いるのかもしれぬ。' }] },
+  ],
+  legend_chonbo: [
+    { say: '古い松の根元から、ふしぎな 香りが ただよってくる……。' },
+    { say: '土の中から、大きな かさを かぶった 灯獣が ゆっくりと 立ちあがった！' },
+    { who: 'チョンボ', say: '……ワレヲ 目ざめさせたのは そなたか。チカラを 見せてみよ。' },
+    {
+      legend: { speciesId: 'chonbo', level: 18 },
+      caught: [{ setFlag: 'chonbo_caught' }, { say: '伝説の灯獣 チョンボが なかまに なった！' }],
+      win: [{ say: 'チョンボは 土の中に しずかに もどっていった……。\n（また 古い松を しらべると 会える）' }],
+      run: [{ say: 'チョンボは 土の中に しずかに もどっていった……。' }],
+    },
+  ],
 };

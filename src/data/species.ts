@@ -210,12 +210,12 @@ const list: SpeciesDef[] = [
     learnset: [[1, 'glow_beam'], [1, 'firefly_storm'], [1, 'dazzle'], [1, 'spore_puff']],
   },
   {
-    id: 'kodamazaru', dexNo: 23, name: 'コダマザル', category: 'やまびこざる',
-    description: '岩山に声をこだまさせて仲間と話すサル。胸の石が声に合わせて光る。',
-    ecology: 'いわおの山の岩場で群れて暮らす。生まれつき完成した姿で、進化はしない。',
-    elements: ['stone', 'neutral'], baseStats: { hp: 76, atk: 88, def: 78, spa: 52, spd: 64, spe: 86 },
-    baseExp: 150, catchRate: 60, rarity: 'rare', role: 'balanced', habitat: 'いわおの山（未実装）', art: 'kodamazaru', color: '#9a7a5a',
-    learnset: [[1, 'tackle'], [1, 'pebble_toss'], [10, 'quick_dash'], [16, 'rock_drill'], [22, 'heavy_press']],
+    id: 'chonbo', dexNo: 23, name: 'チョンボ', category: 'まつのみこ',
+    description: '千年の松の根元に ひとつだけ生えるという 伝説の灯獣。かさの奥から ただよう香りは、灯を 静かに よみがえらせる。',
+    ecology: '森の灯脈が いちばん澄んだ夜にだけ 姿をあらわす。生まれつき完成した姿で、進化はしない。香りをかいだ者は 深い眠りに落ちるという。',
+    elements: ['sprout', 'stone'], baseStats: { hp: 100, atk: 92, def: 108, spa: 96, spd: 104, spe: 70 },
+    baseExp: 260, catchRate: 18, rarity: 'legend', role: 'tank', habitat: 'ほたる森の奥（ホタルノオウを鎮めた後）', art: 'chonbo', color: '#a8743a',
+    learnset: [[1, 'matsu_kaori'], [1, 'sap_drain'], [1, 'iron_shell'], [1, 'rock_drill'], [24, 'thorn_rush'], [30, 'spring_heal']],
   },
 ];
 

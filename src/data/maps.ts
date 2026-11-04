@@ -447,6 +447,12 @@ const forest: MapDef = {
       showIf: { flag: 'boss1_down' },
       talk: [{ script: 'hotaru_calm' }],
     },
+    {
+      id: 'legend_chonbo', name: 'チョンボ', x: 12, y: 3, facing: 'down',
+      look: { body: '#a8743a', hair: '#e8dcc0', kind: 'boss', speciesId: 'chonbo' },
+      showIf: { all: [{ flag: 'boss1_down' }, { notFlag: 'chonbo_caught' }] },
+      talk: [{ script: 'legend_chonbo' }],
+    },
   ],
   objects: [
     { id: 'lantern_a', x: 14, y: 7, kind: 'lantern', flag: 'lantern_a' },

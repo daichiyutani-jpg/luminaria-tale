@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MonsterInstance } from '../src/core/types';
 import { effectiveness } from '../src/data/elements';
+import { checkCondition } from '../src/data/conditions';
 import { MAPS, isWalkableTile, tileAt } from '../src/data/maps';
 import { MOVES } from '../src/data/moves';
 import { SCRIPTS, type Cmd } from '../src/data/scripts';
@@ -271,6 +272,28 @@ describe('進化の設計', () => {
     expect(count[0] / roots.length).toBeCloseTo(0.2, 5);
     expect(count[1] / roots.length).toBeCloseTo(0.5, 5);
     expect(count[2] / roots.length).toBeCloseTo(0.3, 5);
+  });
+});
+
+describe('伝説の灯獣 チョンボ', () => {
+  it('進化しない伝説の灯獣で、捕まえられる（ただし捕まえにくい）', () => {
+    const c = SPECIES.chonbo;
+    expect(c.rarity).toBe('legend');
+    expect(c.evolutions ?? []).toHaveLength(0);
+    expect(c.evolvesFrom).toBeUndefined();
+    expect(c.catchRate).toBeGreaterThan(0);
+    expect(c.catchRate).toBeLessThanOrEqual(20);
+    expect(c.learnset.some(([, m]) => m === 'matsu_kaori')).toBe(true);
+  });
+  it('ほたる森で、ホタルノオウを鎮めた後・捕まえる前だけ姿を見せる', () => {
+    const npc = MAPS.firefly_forest.npcs.find((n) => n.id === 'legend_chonbo');
+    expect(npc).toBeTruthy();
+    const save = newGame(1, 'テスト');
+    expect(checkCondition(save, npc!.showIf!)).toBe(false);
+    save.flags.boss1_down = true;
+    expect(checkCondition(save, npc!.showIf!)).toBe(true);
+    save.flags.chonbo_caught = true;
+    expect(checkCondition(save, npc!.showIf!)).toBe(false);
   });
 });
 

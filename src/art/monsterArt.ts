@@ -3,6 +3,8 @@
  * 本番のイラストができたら、species.art と同じ名前の画像に差し替える前提。
  *
  * 描き方：
+ * - 進化前はかわいく（大きな頭・丸い体・丸い目）、進化するたびにカッコよく強そうに
+ *   （つり目 → 光る目、炎・よろい・オーラが増える）
  * - 正面向きで、左半分を描いて左右反転（sym / mir）。形がきれいにそろう
  * - 目はつり目・縦長の瞳、体はグラデーションで立体感、炎・うろこ・毛並みを描き込む
  * - 最後に RENDER_FILTER（光・つや・きめ）を全体にかける
@@ -166,7 +168,7 @@ const svg = (inner: string, defs = '') =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><defs>${RENDER_FILTER}${COMMON_DEFS}${defs}</defs><g filter="url(#rl)"><g stroke-linejoin="round" stroke-linecap="round">${inner}</g></g></svg>`;
 
 // ───────────────────────── ほむら：キツネの系統 ─────────────────────────
-const foxHead = (top: number, body: string, cream: string, iris: string, earH = 40) => {
+const foxHead = (top: number, body: string, cream: string, iris: string, earH = 40, glow = false) => {
   const t = top;
   return `
     ${mir(`${path(`M68 ${t + 22} L52 ${t + 22 - earH} L92 ${t + 8}Z`, body)}${path(`M70 ${t + 16} L58 ${t + 26 - earH * 0.85} L84 ${t + 8}Z`, '#4a140c', 0)}${path(`M71 ${t + 12} L63 ${t + 30 - earH * 0.8} L80 ${t + 8}Z`, '#ff9a5a', 0, 'opacity=".55"')}`)}
@@ -174,23 +176,10 @@ const foxHead = (top: number, body: string, cream: string, iris: string, earH = 
     ${mir(path(`M60 ${t + 40} L38 ${t + 50} L58 ${t + 55} L44 ${t + 66} L68 ${t + 61}Z`, cream, 1.5))}
     ${P(`M100 ${t + 44} C92 ${t + 44} 86 ${t + 48} 82 ${t + 54} C78 ${t + 59} 72 ${t + 60} 66 ${t + 57} C70 ${t + 67} 84 ${t + 73} 100 ${t + 73}`, cream, 1.5)}
     ${mir(path(`M64 ${t + 29} Q74 ${t + 25} 82 ${t + 31} Q74 ${t + 31} 66 ${t + 34}Z`, '#a8200c', 0))}
-    ${mir(eye(83, t + 37, 11, iris))}
+    ${mir(eye(83, t + 37, 11, iris, glow))}
     <path d="M93 ${t + 50} Q100 ${t + 45} 107 ${t + 50} Q105 ${t + 57} 100 ${t + 58} Q95 ${t + 57} 93 ${t + 50}Z" fill="${OUT}"/><ellipse cx="98" cy="${t + 49}" rx="2.2" ry="1.2" fill="#fff" opacity=".6"/>
     <path d="M100 ${t + 58} L100 ${t + 62} M92 ${t + 63} Q96 ${t + 66} 100 ${t + 62} Q104 ${t + 66} 108 ${t + 63}" fill="none" ${sw(1.6)}/>`;
 };
-
-const hinokoro: Recipe = () =>
-  svg(
-    `${shadow(50)}
-    ${path('M118 162 C160 170 188 134 172 94 C164 114 150 126 130 132Z', 'url(#hb)')}
-    ${flame(171, 98, 46, 16, 18)}
-    ${P('M100 104 C80 104 64 124 64 150 C64 170 72 182 84 184 L100 184', 'url(#hb)')}
-    ${mir(`${path('M82 140 C80 156 78 170 78 182 L95 182 C95 168 95 154 96 142Z', 'url(#hb)')}${path('M76 177 Q86 171 96 177 L96 185 L76 185Z', '#5a2210', 1.5)}${claws(86, 184, 0.7)}`)}
-    ${P('M100 110 L84 111 L74 128 L85 125 L80 143 L92 134 L95 150 L100 140', 'url(#hc)', 1.5)}
-    ${foxHead(40, 'url(#hb)', 'url(#hc)', '#ffc23a')}
-    ${flame(100, 60, 18, 7)}`,
-    rad('hb', ['#ffb27a', '#f0712f', '#a8361a']) + rad('hc', ['#fffaf0', '#f6dcc0', '#cfa47c']),
-  );
 
 const kagurabi: Recipe = () =>
   svg(
@@ -217,7 +206,7 @@ const homuragitsune: Recipe = () =>
     ${P('M100 92 L86 94 L72 112 L85 108 L78 128 L91 120 L88 142 L97 132 L100 148', 'url(#fc)', 1.5)}
     ${P('M100 96 C86 96 76 92 70 86 L74 96 C80 104 90 108 100 108', 'url(#gold)', 1.5)}
     <circle cx="100" cy="103" r="5" fill="#ff2a12" ${sw(1.2)}/>
-    ${foxHead(22, 'url(#fb)', 'url(#fc)', '#fff27a', 38)}
+    ${foxHead(22, 'url(#fb)', 'url(#fc)', '#fff27a', 38, true)}
     ${mir(flame(56, 14, 18, 7, -18))}
     ${P('M100 23 L92 31 L95 42 L100 48', 'url(#gold)', 1.5)}
     ${mir(path('M62 46 Q60 58 66 66 L70 60Z', 'url(#gold)', 1))}`,
@@ -225,27 +214,6 @@ const homuragitsune: Recipe = () =>
   );
 
 // ───────────────────────── しお：イモリ・竜の系統 ─────────────────────────
-const shizukun: Recipe = () =>
-  svg(
-    `${shadow(56)}
-    ${path('M122 166 C160 176 186 160 178 132 C170 148 152 156 130 154Z', 'url(#sb)')}
-    ${path('M150 156 C162 150 172 142 176 132 C176 146 168 156 156 160Z', '#9fe0ff', 0, 'opacity=".7"')}
-    ${mir(`${path('M72 150 C58 156 48 166 44 178 L66 180 C68 170 74 162 82 158Z', 'url(#sb)')}${[46, 54, 62].map((x) => `<circle cx="${x}" cy="181" r="4" fill="#2f78c0" ${sw(1.2)}/>`).join('')}`)}
-    ${P('M100 110 C80 110 64 126 62 146 C62 164 76 176 100 178', 'url(#sb)')}
-    ${P('M100 122 C88 122 80 134 80 148 C82 162 90 170 100 170', '#d8f0ff', 1.5)}
-    ${[134, 144, 154, 162].map((y) => `<path d="M84 ${y} Q100 ${y + 4} 116 ${y}" stroke="#8fb8d8" stroke-width="1.2" fill="none"/>`).join('')}
-    ${mir(`${path('M54 82 C40 72 30 68 20 70 C28 78 38 84 50 90Z', 'url(#gill)', 1.5)}${path('M50 94 C36 92 24 94 14 100 C26 104 38 104 50 101Z', 'url(#gill)', 1.5)}${path('M54 105 C42 110 34 116 30 126 C42 122 50 117 60 111Z', 'url(#gill)', 1.5)}`)}
-    ${P('M100 60 C76 60 52 70 48 90 C46 106 60 118 80 122 L100 124', 'url(#sb)')}
-    ${mir([[70, 140], [66, 160], [78, 166]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3" fill="#bfe6ff" opacity=".8"/>`).join(''))}
-    ${mir([[62, 74], [56, 100], [74, 70]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="2.5" fill="#bfe6ff" opacity=".8"/>`).join(''))}
-    ${mir(eye(76, 90, 10, '#ffd84a'))}
-    <path d="M78 110 Q100 118 122 110" fill="none" ${sw(2)}/>
-    <path d="M100 10 C88 30 80 40 80 52 C80 64 90 72 100 72 C110 72 120 64 120 52 C120 40 112 30 100 10Z" fill="url(#drop)" fill-opacity=".92" ${sw(2)}/>
-    <ellipse cx="92" cy="48" rx="4" ry="9" fill="#fff" opacity=".85"/>
-    <circle cx="105" cy="58" r="5" fill="#fff6b0" opacity=".9"/>`,
-    rad('sb', ['#9fdcff', '#3f8fd8', '#173f78']) + rad('gill', ['#ffe0ea', '#ff7aa8', '#b02a60']) + rad('drop', ['#ffffff', '#a8e6ff', '#3a9ae8']),
-  );
-
 const minamodra: Recipe = () =>
   svg(
     `${shadow(62)}
@@ -271,7 +239,8 @@ const minamodra: Recipe = () =>
 
 const uzushiodra: Recipe = () =>
   svg(
-    `<ellipse cx="100" cy="164" rx="92" ry="26" fill="url(#whirl)" ${sw(1.5, '#0f3a66')}/>
+    `<circle cx="100" cy="90" r="96" fill="url(#uaura)"/>
+    <ellipse cx="100" cy="164" rx="92" ry="26" fill="url(#whirl)" ${sw(1.5, '#0f3a66')}/>
     ${[78, 60, 42].map((rx, i) => `<ellipse cx="${100 + i * 3}" cy="${164 - i * 2}" rx="${rx}" ry="${rx * 0.26}" fill="none" stroke="#dff6ff" stroke-width="${3 - i * 0.6}" stroke-dasharray="${40 - i * 8} ${14 + i * 4}" opacity=".85"/>`).join('')}
     <ellipse cx="100" cy="148" rx="60" ry="24" fill="url(#ub)" ${sw()}/>
     <ellipse cx="96" cy="128" rx="46" ry="19" fill="url(#ub)" ${sw()}/>
@@ -285,32 +254,14 @@ const uzushiodra: Recipe = () =>
     ${mir(path('M66 34 C52 26 40 26 30 30 C42 34 52 38 64 44Z', '#8fdcff', 1.2))}
     ${P('M100 12 C80 12 64 24 62 42 C62 56 74 66 88 70 L100 72', 'url(#ub)')}
     ${P('M100 44 C92 44 84 50 84 58 C86 64 92 68 100 70', '#bfe0f4', 1.2)}
-    ${mir(eye(84, 38, 9.5, '#fff07a'))}
+    ${mir(eye(84, 38, 9.5, '#7af0ff', true))}
     ${mir(path('M88 64 L90 70 L93 65Z', '#fff', 1))}
     ${[[30, 150], [170, 148], [48, 132], [156, 128], [20, 168], [182, 170]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3" fill="#e8fbff" opacity=".9"/>`).join('')}`,
-    rad('ub', ['#7fc4f4', '#1f62a8', '#0c2a52']) + rad('whirl', ['#bfeaff', '#3f9ae0', '#174f88'], '50%', '40%', '60%'),
+    rad('ub', ['#7fc4f4', '#1f62a8', '#0c2a52']) + rad('whirl', ['#bfeaff', '#3f9ae0', '#174f88'], '50%', '40%', '60%') + rad('uaura', ['rgba(120,210,255,.5)', 'rgba(60,150,240,.15)', 'rgba(40,120,220,0)'], '50%', '50%', '50%'),
   );
 
 // ───────────────────────── めぶき：ハリネズミ・獅子の系統 ─────────────────────────
-const mebukin: Recipe = () =>
-  svg(
-    `${shadow(56)}
-    ${Array.from({ length: 13 }, (_, i) => {
-      const a = -84 + i * 14;
-      const r = (a * Math.PI) / 180;
-      return leaf(100 + Math.sin(r) * 34, 128 - Math.cos(r) * 30, 54, 13, a, i % 2 ? 'url(#lf)' : 'url(#lf2)');
-    }).join('')}
-    ${P('M100 78 C76 78 56 98 54 126 C54 154 72 172 100 174', 'url(#mb2)')}
-    ${P('M100 100 C86 100 76 112 74 128 C74 146 86 160 100 164', 'url(#mf)', 1.5)}
-    ${mir(`<ellipse cx="78" cy="176" rx="13" ry="7" fill="#5a3a22" ${sw(1.5)}/>${claws(78, 180, 0.6)}`)}
-    ${mir(eye(85, 124, 8.5, '#9bff5a'))}
-    <ellipse cx="100" cy="150" rx="7" ry="5.5" fill="${OUT}"/><ellipse cx="98" cy="148" rx="2" ry="1.4" fill="#fff" opacity=".7"/>
-    <path d="M92 158 Q100 162 108 158" fill="none" ${sw(1.5)}/>
-    ${mir(path('M76 138 Q82 136 86 140', 'none', 1.2))}`,
-    rad('mb2', ['#8a6a4a', '#5e4228', '#2e1e10']) + rad('mf', ['#fff6e4', '#f0d8b4', '#c49a6a']) + lin('lf', ['#2f7a2a', '#6ccf4a', '#c8f59a'], 0, 1, 0, 0) + lin('lf2', ['#24661f', '#4cae3f', '#a6e878'], 0, 1, 0, 0),
-  );
-
-const lionBody = (bodyFill: string, mane: string, iris: string, top = 40) => `
+const lionBody = (bodyFill: string, mane: string, iris: string, top = 40, glow = false) => `
     ${mir(`${path('M72 128 C68 150 66 168 64 182 L90 184 C90 168 92 150 94 132Z', bodyFill)}${claws(76, 184, 0.9)}`)}
     ${P('M100 108 C80 108 64 120 62 140 C62 156 72 166 90 168 L100 168', bodyFill)}
     ${star(100, top + 32, 16, 62, 44, 6, mane)}${star(100, top + 32, 16, 50, 36, 17, mane, 1.5)}
@@ -319,7 +270,7 @@ const lionBody = (bodyFill: string, mane: string, iris: string, top = 40) => `
     <path d="M92 ${top + 42} Q100 ${top + 38} 108 ${top + 42} L100 ${top + 50}Z" fill="${OUT}"/>
     <path d="M100 ${top + 50} L100 ${top + 55} M90 ${top + 56} Q100 ${top + 60} 110 ${top + 56}" fill="none" ${sw(1.6)}/>
     ${mir(path(`M90 ${top + 56} L92 ${top + 62} L94 ${top + 57}Z`, '#fff', 1))}
-    ${mir(eye(84, top + 24, 9, iris))}`;
+    ${mir(eye(84, top + 24, 9, iris, glow))}`;
 
 const morinonushi: Recipe = () =>
   svg(
@@ -337,33 +288,18 @@ const morinonushi: Recipe = () =>
 
 const jukaiou: Recipe = () =>
   svg(
-    `${[[100, 26, 30], [66, 34, 24], [134, 34, 24], [44, 56, 18], [156, 56, 18]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#canopy)" ${sw(1.8)}/>`).join('')}
+    `<circle cx="100" cy="96" r="98" fill="url(#jaura)"/>
+    ${[[100, 26, 30], [66, 34, 24], [134, 34, 24], [44, 56, 18], [156, 56, 18]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#canopy)" ${sw(1.8)}/>`).join('')}
     ${[[88, 18], [112, 22], [60, 30], [140, 28], [100, 40]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3" fill="#ffe27a"/>`).join('')}
     ${mir(path('M84 60 C76 46 66 38 52 36 L56 32 C68 34 78 40 86 50 C88 40 92 30 98 24 L102 28 C96 36 92 48 92 60Z', '#6a4a2a', 1.5))}
     ${shadow(70)}
-    ${lionBody('url(#jb)', 'url(#moss)', '#c8ff5a', 46)}
+    ${lionBody('url(#jb)', 'url(#moss)', '#c8ff5a', 46, true)}
     ${mir(`${path('M66 118 L52 110 L60 98 L76 104Z', 'url(#rock)', 1.5)}${path('M60 134 L46 130 L50 118 L64 122Z', 'url(#rock)', 1.5)}`)}
     ${mir(`${leaf(70, 136, 14, 5, -30, '#6ccf4a')}${leaf(80, 160, 12, 4, -20, '#4cae3f')}`)}`,
-    rad('jb', ['#e8c890', '#a8804a', '#54381c']) + rad('moss', ['#5fae4a', '#2f6a2a', '#123a14'], '50%', '40%', '60%') + rad('canopy', ['#9be07a', '#3f9a45', '#1a4a1e']),
+    rad('jb', ['#e8c890', '#a8804a', '#54381c']) + rad('moss', ['#5fae4a', '#2f6a2a', '#123a14'], '50%', '40%', '60%') + rad('canopy', ['#9be07a', '#3f9a45', '#1a4a1e']) + rad('jaura', ['rgba(200,255,140,.5)', 'rgba(120,220,90,.15)', 'rgba(90,200,70,0)'], '50%', '50%', '50%'),
   );
 
 // ───────────────────────── いかずち：ヒヨコ・雷鳥 ─────────────────────────
-const piricchi: Recipe = () =>
-  svg(
-    `${shadow(50)}
-    ${bolt(100, 46, 1.6, 0)}${mir(bolt(80, 52, 1.2, -24))}
-    ${mir(path('M58 108 C40 104 28 112 24 126 L34 122 L30 134 L42 128 L40 140 C48 134 54 130 60 132Z', 'url(#pw)'))}
-    ${mir(`${path('M86 160 L82 180 M82 180 L74 184 M82 180 L82 186 M82 180 L90 184', 'none', 2.5, 'stroke="#d0801a"')}`)}
-    ${P('M100 58 C72 58 52 82 52 112 C52 142 72 164 100 164', 'url(#pb)')}
-    ${P('M100 112 C88 112 78 122 78 138 C80 152 90 160 100 160', '#fff6c8', 1.2)}
-    ${furRing(100, 110, 44, 50, 44, 6, '#ffe46a', 3)}
-    ${mir(eye(84, 98, 9.5, '#3aa0ff'))}
-    ${P('M100 104 L90 112 L100 122', 'url(#beak)', 1.5)}
-    ${mir(path('M66 116 Q72 112 78 118 Q72 120 66 120Z', '#ff8a4a', 0, 'opacity=".5"'))}
-    ${[[34, 70, 20], [168, 76, -30], [160, 150, 15], [36, 150, -10]].map(([x, y, r]) => bolt(x, y, 0.7, r)).join('')}`,
-    rad('pb', ['#fff3a0', '#f2c82c', '#a8780c']) + rad('pw', ['#fff3a0', '#e8b81c', '#8a5a0a']) + lin('beak', ['#ffc04a', '#e0701a'], 0, 0, 0, 1),
-  );
-
 const raimeicho: Recipe = () =>
   svg(
     `${shadow(60)}
@@ -385,18 +321,6 @@ const raimeicho: Recipe = () =>
 const fluff = (fill: string, strand: string, strand2: string, seed: number) => `
     <circle cx="100" cy="112" r="50" fill="${fill}" ${sw(1.5)}/>
     ${furRing(100, 112, 40, 40, 90, 16, strand, seed)}${furRing(100, 112, 46, 46, 70, 12, strand2, seed + 4)}`;
-
-const fuwamo: Recipe = () =>
-  svg(
-    `${shadow(48, 180)}
-    ${fluff('url(#fw)', '#fffaf0', '#d8ccb8', 2)}
-    <circle cx="100" cy="114" r="30" fill="url(#fwc)" opacity=".7"/>
-    ${mir(eye(86, 108, 8, '#8a6a4a'))}
-    <path d="M94 126 Q100 130 106 126" fill="none" ${sw(1.4)}/>
-    ${mir(`<ellipse cx="84" cy="168" rx="9" ry="6" fill="#e8dcc8" ${sw(1.5)}/>`)}
-    <circle cx="100" cy="114" r="4" fill="#fff6b0" opacity=".9"/>`,
-    rad('fw', ['#ffffff', '#efe7d6', '#b8a890']) + rad('fwc', ['#ffffff', 'rgba(255,255,255,0)'], '50%', '50%', '50%'),
-  );
 
 const hikariwata: Recipe = () =>
   svg(
@@ -439,21 +363,6 @@ const kazewata: Recipe = () =>
   );
 
 // ───────────────────────── いわお：モグラの系統・サル ─────────────────────────
-const koishimo: Recipe = () =>
-  svg(
-    `${shadow(58)}
-    ${[[62, 74, 16], [86, 60, 18], [114, 60, 18], [138, 74, 16], [100, 48, 14]].map(([x, y, r], i) => star(x, y, 3 + (i % 2), r, r * 0.7, i * 23, 'url(#rock)', 1.6)).join('')}
-    ${P('M100 64 C74 64 54 86 52 116 C50 146 68 172 100 176', 'url(#ko)')}
-    ${furRing(100, 120, 44, 50, 50, 5, '#8a6440', 4)}
-    ${P('M100 108 C88 108 80 120 80 136 C82 154 90 166 100 168', '#c8a07a', 1.2)}
-    ${mir(`${path('M62 132 C44 136 34 148 34 162 C44 166 56 164 66 156Z', '#f2c0b0', 1.8)}${[38, 46, 54, 62].map((x, i) => `<path d="M${x} ${162 - i * 2} L${x - 4} ${176 - i} L${x + 4} ${164 - i * 2}Z" fill="#fff8f0" ${sw(1.2)}/>`).join('')}`)}
-    ${mir(`<ellipse cx="80" cy="176" rx="12" ry="6" fill="#f2c0b0" ${sw(1.5)}/>`)}
-    ${mir(eye(86, 104, 6.5, '#2a1a10'))}
-    <path d="M92 114 Q100 108 108 114 L104 124 Q100 128 96 124Z" fill="#ff8fa3" ${sw(1.5)}/>
-    <path d="M100 128 L100 132 M94 134 Q100 137 106 134" fill="none" ${sw(1.4)}/>`,
-    rad('ko', ['#b8946a', '#7a5636', '#3a2414']),
-  );
-
 const gankutsu: Recipe = () =>
   svg(
     `${shadow(70)}
@@ -469,43 +378,7 @@ const gankutsu: Recipe = () =>
     rad('gk', ['#a8845a', '#6a4a2a', '#2e1c0c']) + rad('rock2', ['#c8c0b4', '#8a8278', '#4a443e']),
   );
 
-const kodamazaru: Recipe = () =>
-  svg(
-    `${shadow(62)}
-    ${path('M124 160 C160 170 182 146 170 116 C176 140 160 150 136 148Z', 'url(#kz)')}
-    ${mir(`${path('M70 100 C48 104 38 128 40 156 C40 166 44 176 50 180 L64 178 C58 160 58 140 66 124Z', 'url(#kz)')}${claws(56, 180, 0.7, '#3a2a20')}`)}
-    ${mir(`${path('M78 146 C72 160 70 172 70 182 L92 184 C92 172 94 160 96 150Z', 'url(#kz)')}`)}
-    ${P('M100 86 C80 86 66 102 64 124 C64 144 74 156 100 160', 'url(#kz)')}
-    ${P('M100 98 C88 98 80 108 80 122 C80 138 88 148 100 150', '#d8c4a8', 1.2)}
-    ${star(100, 122, 6, 14, 8, 0, 'url(#rock)', 1.5)}
-    <circle cx="100" cy="122" r="7" fill="url(#gem)" ${sw(1.2)}/>
-    ${mir(`<circle cx="64" cy="54" r="12" fill="url(#kz)" ${sw(2)}/><circle cx="64" cy="54" r="6" fill="#c8a080"/>`)}
-    ${P('M100 28 C80 28 66 40 66 58 C66 74 78 86 100 88', 'url(#kz)')}
-    ${P('M100 46 C88 46 78 52 78 62 C78 74 88 82 100 82', '#e8d0b0', 1.5)}
-    ${furRing(100, 44, 22, 12, 24, 6, '#5a4632', 6)}
-    ${mir(eye(88, 58, 7.5, '#ffb43a'))}
-    <path d="M96 70 L100 66 L104 70" fill="none" ${sw(1.5)}/>
-    <path d="M90 76 Q100 80 110 76" fill="none" ${sw(1.6)}/>${mir(path('M92 76 L94 81 L96 77Z', '#fff', 1))}`,
-    rad('kz', ['#a8907a', '#6e5844', '#352820']) + rad('gem', ['#ffffff', '#7affd0', '#1a9a7a']),
-  );
-
 // ───────────────────────── はやて：鳥の系統 ─────────────────────────
-const kazamidori: Recipe = () =>
-  svg(
-    `${shadow(50)}
-    ${mir(path('M90 136 L70 186 L88 172 L100 190Z', 'url(#zt)', 1.8))}
-    ${mir(path('M72 96 C54 90 38 98 30 114 L42 112 L34 126 L48 120 L44 134 C56 128 66 122 76 124Z', 'url(#zw2)'))}
-    ${mir(`${path('M90 150 L86 170', 'none', 3, 'stroke="#c07a1a"')}${claws(86, 170, 0.6, '#2a2030')}`)}
-    ${P('M100 74 C84 74 72 88 72 108 C72 130 84 148 100 152', 'url(#zb)')}
-    ${P('M100 98 C92 98 86 108 86 120 C86 134 92 144 100 148', '#f0fbff', 1.2)}
-    ${path('M100 46 L96 18 L120 12 L112 22 L132 26 L104 32 L102 46Z', 'url(#gold)', 1.6)}
-    ${path('M96 18 L84 26 L96 30Z', 'url(#gold)', 1.4)}
-    ${P('M100 40 C86 40 76 52 76 66 C76 78 86 86 100 88', 'url(#zb)')}
-    ${mir(eye(88, 62, 8, '#ff7a2a'))}
-    ${P('M100 68 L92 72 L97 82 L100 86', 'url(#beak2)', 1.5)}`,
-    rad('zb', ['#c8f2fa', '#7bc8d6', '#2a6a80']) + lin('zw2', ['#e8fbff', '#7bc8d6', '#2a5a70'], 1, 0, 0, 0) + lin('zt', ['#5aa8c0', '#1a3a50']) + lin('beak2', ['#ffcf5a', '#c06a12']),
-  );
-
 const arashiwashi: Recipe = () =>
   svg(
     `${shadow(64)}
@@ -525,22 +398,6 @@ const arashiwashi: Recipe = () =>
 // ───────────────────────── かげ：蛾の系統 ─────────────────────────
 const lantern = (x: number, y: number, r: number) =>
   `<circle cx="${x}" cy="${y}" r="${r * 1.8}" fill="url(#glowY)" opacity=".8"/><ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * 1.25}" fill="url(#lan)" ${sw(1.4)}/><path d="M${x - r} ${y - r * 0.4} H${x + r} M${x - r} ${y + r * 0.4} H${x + r}" stroke="#8a3a0a" stroke-width="1" opacity=".7"/>`;
-
-const yoiyami: Recipe = () =>
-  svg(
-    `${shadow(52)}
-    ${mir(path('M92 96 C60 40 14 46 8 92 C4 126 50 132 90 116Z', 'url(#yw)'))}
-    ${mir(path('M92 118 C64 124 34 140 38 166 C44 184 76 168 94 132Z', 'url(#yw2)'))}
-    ${mir(`${lantern(46, 86, 12)}${lantern(60, 154, 8)}<path d="M20 70 Q50 96 84 104" stroke="#2a1a40" stroke-width="1.5" fill="none" opacity=".7"/>`)}
-    ${P('M100 64 C90 64 86 80 86 100 C86 130 92 156 100 166', 'url(#yb)')}
-    ${[110, 124, 138, 150].map((y) => `<path d="M88 ${y} Q100 ${y + 4} 112 ${y}" stroke="#2a1a40" stroke-width="1.4" fill="none"/>`).join('')}
-    ${furRing(100, 82, 12, 12, 26, 6, '#b89ad8', 9)}
-    ${mir(path('M94 58 C84 38 74 22 60 14 C66 30 72 44 86 60Z', '#5a3f8a', 1.4))}
-    ${mir(`<path d="M80 40 L72 42 M76 32 L68 34 M70 24 L62 26" stroke="#5a3f8a" stroke-width="1.5"/>`)}
-    ${P('M100 54 C90 54 84 62 84 72 C84 82 92 88 100 88', 'url(#yb)')}
-    ${mir(eye(90, 70, 7, '#ffd84a', true))}`,
-    rad('yb', ['#a88ad0', '#6a4a9a', '#2a1a48']) + rad('yw', ['#b8a0e0', '#7b5ea8', '#2e1e50']) + rad('yw2', ['#9a80c8', '#5a3f8a', '#22143e']) + rad('lan', ['#fffbd0', '#ffb43a', '#d0600a']),
-  );
 
 const yamitourou: Recipe = () =>
   svg(
@@ -583,6 +440,183 @@ const hotarunoou: Recipe = () =>
     rad('hb3', ['#e8ff9a', '#9ab83a', '#3e5a10']) + rad('abd', ['#fffbd0', '#e8f27a', '#8a9a1a']) + rad('hw2', ['#f8ffd8', '#d9f27a', '#7a9a2a']) + rad('halo2', ['rgba(240,255,160,.6)', 'rgba(220,255,120,.18)', 'rgba(200,255,100,0)'], '50%', '50%', '50%'),
   );
 
+// ───────────────────────── 進化前：かわいい姿 ─────────────────────────
+// 頭を大きく・体は丸く・目は大きな丸目。進化するとつり目・筋肉・炎やよろいが増えて強そうになる。
+
+/** 大きな丸い目（左目として描く。mir で右目もできる） */
+function cuteEye(cx: number, cy: number, r: number, iris: string): string {
+  return `<g transform="translate(${cx} ${cy})">
+    <ellipse rx="${r}" ry="${r * 1.15}" fill="#fff" ${sw(r * 0.1)}/>
+    <ellipse cy="${r * 0.12}" rx="${r * 0.8}" ry="${r * 0.95}" fill="${iris}"/>
+    <ellipse cy="${r * 0.42}" rx="${r * 0.62}" ry="${r * 0.42}" fill="#fff" opacity=".22"/>
+    <ellipse cy="${r * 0.2}" rx="${r * 0.42}" ry="${r * 0.55}" fill="#120a14"/>
+    <circle cx="${-r * 0.3}" cy="${-r * 0.32}" r="${r * 0.33}" fill="#fff"/>
+    <circle cx="${r * 0.32}" cy="${r * 0.4}" r="${r * 0.14}" fill="#fff"/>
+  </g>`;
+}
+const blush = (x: number, y: number, rx = 8) => mir(`<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${rx * 0.55}" fill="#ff7a9a" opacity=".45"/>`);
+const cuteMouth = (y: number, w = 6) => `<path d="M${100 - w} ${y} Q${100 - w / 2} ${y + w * 0.7} 100 ${y} Q${100 + w / 2} ${y + w * 0.7} ${100 + w} ${y}" fill="none" ${sw(1.6)}/>`;
+
+const hinokoro: Recipe = () =>
+  svg(
+    `${shadow(44)}
+    ${path('M124 162 C150 168 170 150 164 124 C156 138 144 146 130 148Z', 'url(#hb)')}
+    ${flame(164, 128, 30, 11, 14)}
+    <ellipse cx="100" cy="152" rx="32" ry="28" fill="url(#hb)" ${sw()}/>
+    <ellipse cx="100" cy="158" rx="18" ry="16" fill="url(#hc)"/>
+    ${mir(`<ellipse cx="84" cy="178" rx="10" ry="7" fill="url(#hb)" ${sw()}/>`)}
+    ${mir(`${path('M62 76 C52 56 52 36 60 22 C72 30 86 46 92 62Z', 'url(#hb)')}${path('M66 68 C60 54 60 42 64 32 C72 40 80 50 84 60Z', '#ff9a8a', 0, 'opacity=".8"')}`)}
+    <circle cx="100" cy="96" r="48" fill="url(#hb)" ${sw()}/>
+    ${P('M100 98 C88 98 72 104 64 116 C70 132 86 140 100 140', 'url(#hc)', 1.5)}
+    ${mir(cuteEye(80, 94, 12, '#c8641a'))}
+    ${blush(68, 116)}
+    <ellipse cx="100" cy="114" rx="6" ry="4.5" fill="${OUT}"/><ellipse cx="98" cy="113" rx="2" ry="1.2" fill="#fff" opacity=".7"/>
+    ${cuteMouth(121)}
+    ${flame(100, 62, 16, 6)}`,
+    rad('hb', ['#ffc08a', '#f58a46', '#c4541e']) + rad('hc', ['#fffcf4', '#fbe8d2', '#e4c4a0']),
+  );
+
+const shizukun: Recipe = () =>
+  svg(
+    `${shadow(48)}
+    ${path('M126 160 C152 168 172 156 168 136 C160 148 146 152 132 150Z', 'url(#sb)')}
+    <ellipse cx="100" cy="154" rx="38" ry="26" fill="url(#sb)" ${sw()}/>
+    <ellipse cx="100" cy="160" rx="24" ry="15" fill="#e2f4ff"/>
+    ${mir(`<ellipse cx="74" cy="176" rx="11" ry="7" fill="url(#sb)" ${sw()}/>`)}
+    ${mir([[44, 88, -30], [40, 104, 0], [46, 120, 30]].map(([x, y, r]) => `<ellipse cx="${x}" cy="${y}" rx="11" ry="6" transform="rotate(${r} ${x} ${y})" fill="url(#gill)" ${sw(1.5)}/>`).join(''))}
+    <ellipse cx="100" cy="104" rx="52" ry="42" fill="url(#sb)" ${sw()}/>
+    ${mir(cuteEye(80, 102, 12, '#2a6ab8'))}
+    ${blush(66, 122)}
+    ${cuteMouth(124, 8)}
+    <path d="M100 26 C90 42 84 50 84 60 C84 70 92 76 100 76 C108 76 116 70 116 60 C116 50 110 42 100 26Z" fill="url(#drop)" fill-opacity=".92" ${sw(2)}/>
+    <ellipse cx="94" cy="56" rx="3" ry="7" fill="#fff" opacity=".85"/>`,
+    rad('sb', ['#b4e6ff', '#5aa8ec', '#2a64a8']) + rad('gill', ['#ffe8f0', '#ff9ab8', '#d0507a']) + rad('drop', ['#ffffff', '#b8ecff', '#4aa8ee']),
+  );
+
+const mebukin: Recipe = () =>
+  svg(
+    `${shadow(50)}
+    ${Array.from({ length: 9 }, (_, i) => {
+      const a = -72 + i * 18;
+      const r = (a * Math.PI) / 180;
+      return leaf(100 + Math.sin(r) * 30, 112 - Math.cos(r) * 28, 34, 13, a, i % 2 ? 'url(#lf)' : 'url(#lf2)');
+    }).join('')}
+    <circle cx="100" cy="124" r="50" fill="url(#mb2)" ${sw()}/>
+    ${P('M100 96 C82 96 64 108 62 128 C62 150 80 164 100 164', 'url(#mf)', 1.5)}
+    ${mir(`<ellipse cx="80" cy="176" rx="11" ry="7" fill="#7a5032" ${sw(1.5)}/>`)}
+    ${mir(cuteEye(82, 124, 11, '#3a8a2a'))}
+    ${blush(70, 144)}
+    <ellipse cx="100" cy="142" rx="5" ry="4" fill="${OUT}"/>
+    ${cuteMouth(149, 5)}
+    ${leaf(100, 76, 18, 7, 10, 'url(#lf)')}`,
+    rad('mb2', ['#a88464', '#7a5a3a', '#4a3220']) + rad('mf', ['#fffaf0', '#f6e4c8', '#d8b68e']) + lin('lf', ['#3f9a3a', '#7ad85a', '#d2f8a8'], 0, 1, 0, 0) + lin('lf2', ['#2f8a2a', '#5cc04a', '#b2ec88'], 0, 1, 0, 0),
+  );
+
+const piricchi: Recipe = () =>
+  svg(
+    `${shadow(46)}
+    ${bolt(100, 54, 1.1, 8)}
+    ${mir(`<ellipse cx="52" cy="122" rx="14" ry="9" transform="rotate(-30 52 122)" fill="url(#pw)" ${sw()}/>`)}
+    ${mir(path('M88 166 L86 180 M86 180 L80 184 M86 180 L86 186 M86 180 L92 184', 'none', 2.5, 'stroke="#e0901a"'))}
+    <circle cx="100" cy="116" r="52" fill="url(#pb)" ${sw()}/>
+    ${furRing(100, 116, 48, 48, 30, 4, '#ffeb8a', 3)}
+    <ellipse cx="100" cy="138" rx="28" ry="22" fill="#fff8d0" opacity=".9"/>
+    ${mir(cuteEye(80, 108, 12, '#2a7ad8'))}
+    ${blush(64, 128)}
+    ${P('M100 118 L92 124 L100 132', 'url(#beak)', 1.5)}`,
+    rad('pb', ['#fff8b8', '#ffd84a', '#d8a018']) + rad('pw', ['#fff8b8', '#f2c42c', '#b8840c']) + lin('beak', ['#ffc04a', '#e8801a'], 0, 0, 0, 1),
+  );
+
+const koishimo: Recipe = () =>
+  svg(
+    `${shadow(48)}
+    <circle cx="100" cy="122" r="50" fill="url(#ko)" ${sw()}/>
+    ${[[80, 76, 12], [104, 70, 13], [124, 82, 10]].map(([x, y, r], i) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * 0.8}" fill="${i === 1 ? 'url(#rock2)' : 'url(#rock)'}" ${sw(1.6)}/>`).join('')}
+    ${P('M100 112 C86 112 74 122 72 136 C74 154 88 164 100 164', '#e2c4a0', 1.2)}
+    ${mir(`${path('M58 140 C46 142 40 152 42 160 C50 162 58 158 64 152Z', '#f6c8b8', 1.8)}${[44, 50, 56].map((x) => `<path d="M${x} 160 l-1 6 l4 -5Z" fill="#fff" ${sw(1)}/>`).join('')}`)}
+    ${mir(`<ellipse cx="82" cy="176" rx="11" ry="6" fill="#f6c8b8" ${sw(1.5)}/>`)}
+    ${mir(cuteEye(82, 116, 10, '#5a3a22'))}
+    ${blush(70, 134)}
+    <ellipse cx="100" cy="132" rx="8" ry="6" fill="#ff8fa8" ${sw(1.5)}/><ellipse cx="97" cy="130" rx="2.5" ry="1.5" fill="#fff" opacity=".7"/>
+    ${cuteMouth(143, 5)}`,
+    rad('ko', ['#c8a884', '#9a7652', '#5e4228']) + rad('rock2', ['#d8d0c4', '#a09888', '#5e5850']),
+  );
+
+const kazamidori: Recipe = () =>
+  svg(
+    `${shadow(44)}
+    ${mir(path('M92 156 L80 176 L94 170Z', 'url(#zt)', 1.6))}
+    ${mir(`<ellipse cx="54" cy="122" rx="15" ry="9" transform="rotate(-24 54 122)" fill="url(#zw2)" ${sw()}/>`)}
+    ${mir(path('M90 160 L88 178 M88 178 L82 182 M88 178 L94 182', 'none', 2.5, 'stroke="#e0901a"'))}
+    <circle cx="100" cy="118" r="48" fill="url(#zb)" ${sw()}/>
+    <ellipse cx="100" cy="140" rx="26" ry="20" fill="#f4fcff" opacity=".9"/>
+    ${path('M100 72 L98 52 L114 48 L108 56 L120 60 L102 62 L101 72Z', 'url(#gold)', 1.5)}
+    ${mir(cuteEye(80, 110, 12, '#e0661a'))}
+    ${blush(64, 130)}
+    ${P('M100 120 L92 126 L100 134', 'url(#beak2)', 1.5)}`,
+    rad('zb', ['#e0f8ff', '#9ad8e6', '#4a96aa']) + lin('zw2', ['#f0fcff', '#9ad8e6', '#4a86a0'], 1, 0, 0, 0) + lin('zt', ['#7ac0d4', '#2a5a70']) + lin('beak2', ['#ffcf5a', '#d8801a']),
+  );
+
+const yoiyami: Recipe = () =>
+  svg(
+    `${shadow(46)}
+    ${mir(`<ellipse cx="56" cy="104" rx="34" ry="28" transform="rotate(-20 56 104)" fill="url(#yw)" ${sw()}/>`)}
+    ${mir(`<ellipse cx="66" cy="148" rx="20" ry="16" transform="rotate(20 66 148)" fill="url(#yw2)" ${sw()}/>`)}
+    ${mir(`${lantern(48, 100, 9)}${lantern(64, 150, 6)}`)}
+    <ellipse cx="100" cy="128" rx="30" ry="40" fill="url(#yb)" ${sw()}/>
+    ${furRing(100, 112, 24, 22, 34, 6, '#d8c4f0', 9)}
+    ${mir(path('M92 84 C86 68 78 58 70 54', 'none', 2.4))}
+    ${mir(`<circle cx="70" cy="54" r="6" fill="#ffd27a" ${sw(1.5)}/>`)}
+    <circle cx="100" cy="110" r="30" fill="url(#yb)" ${sw()}/>
+    ${mir(cuteEye(88, 108, 10, '#ffb43a'))}
+    ${blush(78, 124, 6)}
+    ${cuteMouth(124, 5)}`,
+    rad('yb', ['#c8b0e8', '#8a6ac0', '#4a3278']) + rad('yw', ['#d8c8f4', '#9a80cc', '#5a3f8a']) + rad('yw2', ['#c8b4ea', '#8064b4', '#4a3278']) + rad('lan', ['#fffbd0', '#ffc04a', '#e07a1a']),
+  );
+
+const fuwamo: Recipe = () =>
+  svg(
+    `${shadow(46, 180)}
+    ${fluff('url(#fw)', '#fffaf0', '#e0d4c0', 2)}
+    <circle cx="100" cy="116" r="32" fill="url(#fwc)" opacity=".7"/>
+    ${mir(cuteEye(84, 108, 11, '#8a6a4a'))}
+    ${blush(72, 126, 7)}
+    ${cuteMouth(128, 5)}
+    ${mir(`<ellipse cx="84" cy="168" rx="9" ry="6" fill="#efe4d0" ${sw(1.5)}/>`)}`,
+    rad('fw', ['#ffffff', '#f4ede0', '#c8b8a0']) + rad('fwc', ['#ffffff', 'rgba(255,255,255,0)'], '50%', '50%', '50%'),
+  );
+
+// ───────────────────────── 伝説：チョンボ（千年の松の根元に生える灯獣） ─────────────────────────
+const chonbo: Recipe = () =>
+  svg(
+    `<circle cx="100" cy="100" r="98" fill="url(#caura)"/>
+    ${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
+      const a = (i / 8) * Math.PI * 2 + 0.3;
+      const x = 100 + Math.cos(a) * 82;
+      const y = 104 + Math.sin(a) * 76;
+      return `<path d="M${x.toFixed(1)} ${y.toFixed(1)} l-6 -9 M${x.toFixed(1)} ${y.toFixed(1)} l6 -9" stroke="#3f7a3a" stroke-width="2"/>`;
+    }).join('')}
+    ${[[30, 40], [170, 46], [20, 130], [180, 120], [58, 20], [146, 18]].map(([x, y]) => sparkle(x, y, 5, '#fff2a8')).join('')}
+    ${shadow(58)}
+    ${mir(`<path d="M80 176 C70 180 58 182 46 188 M86 180 C80 186 74 190 66 194" stroke="#7a5a32" stroke-width="4" fill="none"/>`)}
+    ${mir(`${path('M80 122 C64 120 50 110 42 96', 'none', 6, 'stroke="#8a6438"')}${[-40, -20, 0, 20, 40].map((r) => `<path transform="rotate(${r} 42 96)" d="M42 96 L42 76" stroke="#2f6a2a" stroke-width="2"/>`).join('')}`)}
+    ${P('M100 78 C86 78 72 82 70 96 C68 124 66 152 62 174 C68 184 84 188 100 188', 'url(#stem)')}
+    ${P('M100 82 C88 82 76 84 71 90 L70 104 C80 100 90 100 100 100', '#9a6a3a', 0, 'opacity=".55"')}
+    ${[[82, 108], [118, 110], [86, 150], [114, 156], [80, 172], [120, 172], [100, 104]].map(([x, y]) => `<path d="M${x - 6} ${y} Q${x} ${y - 5} ${x + 6} ${y}" stroke="#8a5a2e" stroke-width="2" fill="none" opacity=".7"/>`).join('')}
+    ${[88, 94, 100, 106, 112].map((x) => `<path d="M${x} 92 Q${x + (x - 100) * 0.3} 140 ${x + (x - 100) * 0.6} 182" stroke="#b89a70" stroke-width="1" fill="none" opacity=".6"/>`).join('')}
+    ${P('M100 120 C88 120 76 118 70 116 L69 130 C78 134 90 136 100 136', 'url(#rope)', 1.5)}
+    ${mir([76, 84, 92].map((x) => `<path d="M${x} 118 L${x - 5} 132" stroke="#6a4a1a" stroke-width="1.5"/>`).join(''))}
+    ${mir(path('M80 134 L76 144 L84 148 L78 160 L86 162', 'none', 3, 'stroke="#fffdf4"'))}
+    ${P('M100 78 C88 78 74 78 64 80 C70 86 86 88 100 88', '#f0e2c4', 1.5)}
+    ${mir([68, 76, 84, 92].map((x) => `<path d="M${x} 81 L${x + 3} 87" stroke="#c8ae84" stroke-width="1"/>`).join(''))}
+    ${P('M100 12 C78 12 58 28 54 54 C52 68 56 78 66 81 C78 83 90 83 100 83', 'url(#cap)')}
+    ${mir([72, 82, 92].map((x) => `<path d="M100 16 Q${x} 36 ${x - 12} 78" stroke="#3a2008" stroke-width="1.4" fill="none" opacity=".45"/>`).join(''))}
+    ${mir(`<path d="M66 46 l8 -3 M78 30 l6 -4 M60 64 l8 -2" stroke="#e8c898" stroke-width="2" opacity=".6"/>`)}
+    ${mir(eye(87, 104, 8.5, '#ffd84a', true))}
+    <path d="M90 115 Q100 111 110 115" fill="none" ${sw(2)}/>`,
+    rad('stem', ['#fffaf0', '#ecdcbc', '#a8875a']) + rad('cap', ['#d8a46a', '#9a5e2a', '#4a2a10'], '40%', '25%', '80%') + lin('rope', ['#f6e6b8', '#c8a050', '#8a6420']) + rad('caura', ['rgba(255,240,170,.7)', 'rgba(220,240,140,.25)', 'rgba(200,230,120,0)'], '50%', '50%', '50%'),
+  );
+
 export const MONSTER_ART: Record<string, Recipe> = {
   hinokoro,
   kagurabi,
@@ -606,7 +640,7 @@ export const MONSTER_ART: Record<string, Recipe> = {
   yoiyami,
   yamitourou,
   hotarunoou,
-  kodamazaru,
+  chonbo,
 };
 
 const cache = new Map<string, string>();
