@@ -3,11 +3,17 @@ import { getSpecies } from '../data/species';
 import type { Rng } from './rng';
 import { maxHp } from './stats';
 
+/**
+ * 捕獲成功率の上限。どんなに弱らせても、良いランタンでも、まれに逃げられる（運の要素を残す）。
+ */
+export const MAX_CAPTURE_CHANCE = 0.85;
+
 const STATUS_BONUS: Record<StatusId, number> = { sleep: 2, paralyze: 1.5, burn: 1.5, poison: 1.5, mist: 1.2 };
 
 /**
  * 捕獲成功率（0〜1）。
  * 残りHPが少ないほど・状態異常があるほど・ランタンが良いほど上がる。捕獲率0の種は捕まえられない。
+ * 上限は MAX_CAPTURE_CHANCE（必ず捕まえられる、ということはない）。
  */
 export function captureChance(target: MonsterInstance, lanternBonus: number): number {
   const rate = getSpecies(target.speciesId).catchRate;
@@ -16,7 +22,7 @@ export function captureChance(target: MonsterInstance, lanternBonus: number): nu
   const hp = Math.max(1, target.hp);
   const status = target.status ? STATUS_BONUS[target.status] : 1;
   const a = (((3 * max - 2 * hp) * rate * lanternBonus) / (3 * max)) * status;
-  return Math.max(0, Math.min(1, a / 255));
+  return Math.max(0, Math.min(MAX_CAPTURE_CHANCE, a / 255));
 }
 
 export interface CaptureRoll {
@@ -30,7 +36,6 @@ export interface CaptureRoll {
 export function rollCapture(target: MonsterInstance, lanternBonus: number, rng: Rng): CaptureRoll {
   const chance = captureChance(target, lanternBonus);
   if (chance <= 0) return { success: false, shakes: 0, chance };
-  if (chance >= 1) return { success: true, shakes: 3, chance };
   const per = chance ** 0.25;
   let passed = 0;
   while (passed < 4 && rng.next() < per) passed++;

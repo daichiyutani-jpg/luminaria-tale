@@ -3,6 +3,7 @@
  */
 import type Phaser from 'phaser';
 import { monsterImageUrl } from '../art/monsterArt';
+import { battleLayout } from './battleLayout';
 import { audio } from '../audio/audio';
 import { session } from '../core/session';
 import type { MonsterInstance } from '../core/types';
@@ -87,19 +88,25 @@ class BattleView {
   private cmd: HTMLElement;
   private shown: [number, number] = [0, 0];
   private tapResolve: (() => void) | null = null;
+  private bottom!: HTMLElement;
+  private onResize: () => void = () => {};
 
   constructor(
     private state: BattleState,
     private scene: BattleScene,
   ) {
     this.enemyPanel = h('div', { class: 'bpanel enemy' });
-    this.playerPanel = h('div', { class: 'bpanel player', style: 'top:40%' });
+    this.playerPanel = h('div', { class: 'bpanel player' });
     this.msg = h('div', { class: 'bmsg' });
     this.cmd = h('div');
     const speedBtn = h('button', { class: 'btn small ghost skip-btn', onClick: () => this.cycleSpeed(speedBtn) }, this.speedLabel());
-    this.root = h('div', { class: 'battle-ui' }, this.enemyPanel, this.playerPanel, speedBtn, h('div', { class: 'bbottom' }, this.msg, this.cmd));
+    this.bottom = h('div', { class: 'bbottom' }, this.msg, this.cmd);
+    this.root = h('div', { class: 'battle-ui' }, this.enemyPanel, this.playerPanel, speedBtn, this.bottom);
     this.msg.addEventListener('pointerup', () => this.tapResolve?.());
     uiRoot().append(this.root);
+    this.applyLayout();
+    this.onResize = () => this.applyLayout();
+    window.addEventListener('resize', this.onResize);
     this.playerPanel.style.visibility = 'hidden';
     this.renderPanel(1);
   }
@@ -117,7 +124,18 @@ class BattleView {
   }
 
   destroy(): void {
+    window.removeEventListener('resize', this.onResize);
     this.root.remove();
+  }
+
+  /** 灯獣の絵と HP 表示が重ならない配置（BattleScene と同じ計算） */
+  private applyLayout(): void {
+    const r = uiRoot().getBoundingClientRect();
+    const L = battleLayout(r.width, r.height);
+    this.bottom.style.height = `${L.boxH}px`;
+    this.enemyPanel.style.width = `${L.enemyPanelW * 100}%`;
+    this.playerPanel.style.width = `${L.playerPanelW * 100}%`;
+    this.playerPanel.style.bottom = `${L.boxH + 8}px`;
   }
 
   // ── 表示 ───────────────────────────

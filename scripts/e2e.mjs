@@ -161,6 +161,7 @@ async function installHelpers() {
       const s = w.__game.session.data;
       return {
         map: w.__game.app.field?.map.id,
+        pos: w.__game.app.field ? { ...w.__game.app.field.pos } : null,
         flags: Object.keys(s.flags),
         party: s.party.map((m) => ({ id: m.speciesId, lv: m.level, hp: m.hp })),
         box: s.box.length,
@@ -313,6 +314,28 @@ try {
     });
     await page.locator('.battle-ui button', { hasText: 'つかまえる' }).waitFor({ timeout: 20_000 });
     if (tries === 0) await shot('08-wild');
+    if (tries === 0) {
+      await page.waitForTimeout(800);
+      const ov = await page.evaluate(() => {
+        const sc = window.__game.app.game.scene.getScene('battle');
+        const cv = window.__game.app.game.canvas.getBoundingClientRect();
+        const k = sc.scale.width / cv.width;
+        const box = (o) => {
+          const b = o.getBounds();
+          // 絵の余白（左右 3%・上 6%）を除いた体の範囲
+          const w = b.width / k;
+          const hgt = b.height / k;
+          return { l: cv.left + b.x / k + w * 0.03, r: cv.left + (b.x + b.width) / k - w * 0.03, t: cv.top + b.y / k + hgt * 0.06, b: cv.top + b.y / k + hgt * 0.93 };
+        };
+        const rect = (el) => el.getBoundingClientRect();
+        const hit = (a, c) => a.l < c.right && a.r > c.left && a.t < c.bottom && a.b > c.top;
+        const e = box(sc.enemy);
+        const pl = box(sc.player);
+        const panels = [...document.querySelectorAll('.bpanel, .bbottom, .skip-btn')].filter((x) => getComputedStyle(x).visibility !== 'hidden').map(rect);
+        return { enemy: panels.some((c) => hit(e, c)), player: sc.player.visible && panels.some((c) => hit(pl, c)), e, pl, panels: panels.map((c) => [c.left, c.top, c.right, c.bottom].map(Math.round)) };
+      });
+      check('戦闘で灯獣の絵と HP 表示・コマンドが重ならない', !ov.enemy && !ov.player, JSON.stringify(ov));
+    }
     check(tries === 0 ? '野生戦では「つかまえる」「にげる」が選べる' : `野生戦 ${tries + 1} 回目`, await page.locator('.battle-ui button', { hasText: 'にげる' }).isEnabled());
     // 捕獲を試す（ランタンを投げ続ける。最初の1回だけ画面写真）
     for (let i = 0; i < 80; i++) {
@@ -349,8 +372,26 @@ try {
   check('野生の灯獣を捕まえて なかまにできる', caught && st.party.some((m) => m.id === 'fuwamo'), JSON.stringify(st.party));
   check('捕まえた灯獣が図鑑に登録される', st.dex >= 2, `つかまえた ${st.dex}`);
 
-  // 10. メニュー・図鑑・なかま・クエスト
-  await page.getByRole('button', { name: /メニュー/ }).click();
+  // 10. 画面下の操作ボタン（十字キー・A・START）
+  await page.waitForTimeout(500);
+  const p0 = await page.evaluate(() => ({ ...window.__state().pos }));
+  const holdPad = async (sel, ms) => {
+    const b = await page.locator(sel).boundingBox();
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(ms);
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+  };
+  for (const d of ['up', 'down', 'left', 'right']) {
+    await holdPad(`.gb-${d}`, 60);
+    const p1 = await page.evaluate(() => window.__state().pos);
+    if (p1.x !== p0.x || p1.y !== p0.y) break;
+  }
+  const p1 = await page.evaluate(() => window.__state().pos);
+  check('画面下の十字キーで歩ける', p1.x !== p0.x || p1.y !== p0.y, `${JSON.stringify(p0)} → ${JSON.stringify(p1)}`);
+  // 11. メニュー・図鑑・なかま・クエスト（START ボタンで開く）
+  await page.locator('.gb-pill[aria-label="START"]').click();
   await page.getByRole('button', { name: /ずかん/ }).click();
   await shot('10-dex');
   check('図鑑が開ける', await page.locator('.screen').last().getByText('フワモ').count() > 0);
@@ -377,7 +418,7 @@ try {
   await shot('12-continue');
 
   // 12. 設定画面のオフライン表示
-  await page.getByRole('button', { name: /メニュー/ }).click();
+  await page.locator('.gb-pill[aria-label="START"]').click();
   await page.getByRole('button', { name: /せってい/ }).click();
   await page.waitForTimeout(1500);
   const offlineText = await page.locator('.screen').last().textContent();

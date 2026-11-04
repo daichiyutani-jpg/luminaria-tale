@@ -3,6 +3,7 @@
  */
 import Phaser from 'phaser';
 import type { StatusId } from '../core/types';
+import { battleLayout } from '../ui/battleLayout';
 
 export type Backdrop = 'field' | 'forest' | 'town' | 'indoor' | 'boss';
 
@@ -58,8 +59,10 @@ export class BattleScene extends Phaser.Scene {
   private layout(): void {
     const W = this.scale.width;
     const H = this.scale.height;
-    this.enemyHome = { x: W * 0.68, y: H * 0.36 };
-    this.playerHome = { x: W * 0.3, y: H * 0.56 };
+    const L = this.cssLayout();
+    const k = this.cssScale();
+    this.enemyHome = { x: L.enemy.x * k, y: L.enemy.y * k };
+    this.playerHome = { x: L.player.x * k, y: L.player.y * k };
     const g = this.bgGfx;
     g.clear();
     const skies: Record<Backdrop, [number, number, number]> = {
@@ -70,35 +73,52 @@ export class BattleScene extends Phaser.Scene {
       boss: [0x1d0f2d, 0x4a2a5a, 0x2b3d2a],
     };
     const [top, mid, ground] = skies[this.backdrop];
+    const hz = this.enemyHome.y * 0.62;
+    const es = L.enemy.size * k;
+    const ps = L.player.size * k;
     const steps = 16;
     for (let i = 0; i < steps; i++) {
       const c = Phaser.Display.Color.Interpolate.ColorWithColor(Phaser.Display.Color.ValueToColor(top), Phaser.Display.Color.ValueToColor(mid), steps, i);
       g.fillStyle(Phaser.Display.Color.GetColor(c.r, c.g, c.b), 1);
-      g.fillRect(0, (H * 0.5 * i) / steps, W, (H * 0.5) / steps + 1);
+      g.fillRect(0, (hz * i) / steps, W, hz / steps + 1);
     }
-    g.fillStyle(ground, 1);
-    g.fillRect(0, H * 0.46, W, H);
+    // 地面：地平線から手前へ明るくなる
+    for (let i = 0; i < steps; i++) {
+      const c = Phaser.Display.Color.Interpolate.ColorWithColor(Phaser.Display.Color.ValueToColor(ground).darken(18), Phaser.Display.Color.ValueToColor(ground).lighten(8), steps, i);
+      g.fillStyle(Phaser.Display.Color.GetColor(c.r, c.g, c.b), 1);
+      g.fillRect(0, hz + ((H - hz) * i) / steps, W, (H - hz) / steps + 1);
+    }
     // 足場
     g.fillStyle(0x000000, 0.12);
-    g.fillEllipse(this.enemyHome.x, this.enemyHome.y - H * 0.005, W * 0.5, H * 0.05);
-    g.fillEllipse(this.playerHome.x, this.playerHome.y - H * 0.005, W * 0.6, H * 0.06);
+    g.fillEllipse(this.enemyHome.x, this.enemyHome.y - es * 0.02, es * 1.15, es * 0.2);
+    g.fillEllipse(this.playerHome.x, this.playerHome.y - ps * 0.02, ps * 1.2, ps * 0.2);
     g.fillStyle(0xffffff, 0.18);
-    g.fillEllipse(this.enemyHome.x, this.enemyHome.y - H * 0.01, W * 0.44, H * 0.035);
-    g.fillEllipse(this.playerHome.x, this.playerHome.y - H * 0.01, W * 0.52, H * 0.045);
+    g.fillEllipse(this.enemyHome.x, this.enemyHome.y - es * 0.04, es * 1.0, es * 0.13);
+    g.fillEllipse(this.playerHome.x, this.playerHome.y - ps * 0.04, ps * 1.05, ps * 0.13);
     if (this.backdrop === 'forest' || this.backdrop === 'boss') {
       for (let i = 0; i < 18; i++) {
         g.fillStyle(this.backdrop === 'boss' ? 0xd9ff5a : 0xfff3a0, 0.5);
-        g.fillCircle((W * ((i * 37) % 100)) / 100, H * (0.05 + ((i * 53) % 40) / 100), 2 + (i % 3));
+        g.fillCircle((W * ((i * 37) % 100)) / 100, hz * (0.1 + ((i * 53) % 80) / 100), 2 + (i % 3));
       }
     }
   }
 
   private sizeSprites(): void {
-    const W = this.scale.width;
-    const H = this.scale.height;
-    const base = Math.min(W, H * 0.7);
-    this.enemy.setScale((base * 0.42) / 320);
-    this.player.setScale((base * 0.5) / 320);
+    const L = this.cssLayout();
+    const k = this.cssScale();
+    this.enemy.setScale((L.enemy.size * k) / 320);
+    this.player.setScale((L.player.size * k) / 320);
+  }
+
+  /** ゲーム画面のピクセル ÷ CSS ピクセル（高解像度の端末では 2 など） */
+  private cssScale(): number {
+    const cw = this.game.canvas.clientWidth;
+    return cw > 0 ? this.scale.width / cw : 1;
+  }
+
+  private cssLayout() {
+    const k = this.cssScale();
+    return battleLayout(this.scale.width / k, this.scale.height / k);
   }
 
   private sprite(side: 0 | 1) {

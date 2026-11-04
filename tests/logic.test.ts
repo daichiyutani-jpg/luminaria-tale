@@ -10,7 +10,7 @@ import { ITEMS } from '../src/data/items';
 import { QUESTS } from '../src/data/quests';
 import { SHOPS } from '../src/data/shops';
 import { active, aiChooseMove, calcDamage, createBattle, resolveTurn, switchAfterFaint } from '../src/logic/battle';
-import { captureChance, rollCapture } from '../src/logic/capture';
+import { captureChance, MAX_CAPTURE_CHANCE, rollCapture } from '../src/logic/capture';
 import { expForLevel, expYield, levelForExp } from '../src/logic/exp';
 import { addMonster, buy, dexCounts, giveNewMonster, moveToBox, newGame, sell, swapPartyBox, updateQuests } from '../src/logic/game';
 import { availableEvolutions, createMonster, evolve, grantExp, learnMove } from '../src/logic/monster';
@@ -258,6 +258,22 @@ describe('バトル', () => {
   });
 });
 
+describe('進化の設計', () => {
+  it('進化の系統は「進化なし2割・1回進化5割・2回進化3割」', () => {
+    const roots = SPECIES_LIST.filter((s) => !s.evolvesFrom);
+    const depth = (id: string): number => {
+      const evo = SPECIES[id].evolutions ?? [];
+      return evo.length ? 1 + Math.max(...evo.map((e) => depth(e.to))) : 0;
+    };
+    const count = [0, 0, 0];
+    for (const r of roots) count[depth(r.id)]++;
+    expect(count[0] + count[1] + count[2]).toBe(roots.length);
+    expect(count[0] / roots.length).toBeCloseTo(0.2, 5);
+    expect(count[1] / roots.length).toBeCloseTo(0.5, 5);
+    expect(count[2] / roots.length).toBeCloseTo(0.3, 5);
+  });
+});
+
 describe('捕獲', () => {
   it('HPが少ないほど・状態異常・良いランタンほど捕まえやすい', () => {
     const m = mk('piricchi', 5);
@@ -269,6 +285,19 @@ describe('捕獲', () => {
     expect(captureChance(m, 1)).toBeGreaterThan(low);
     m.status = null;
     expect(captureChance(m, 2.2)).toBeGreaterThan(low);
+  });
+  it('どんなに弱らせても・良いランタンでも、ランダムで捕まえられないことがある', () => {
+    const m = mk('piricchi', 3);
+    m.hp = 1;
+    m.status = 'sleep';
+    expect(captureChance(m, 2.2)).toBe(MAX_CAPTURE_CHANCE);
+    expect(MAX_CAPTURE_CHANCE).toBeLessThan(1);
+    const rng = seededRng(7);
+    let fail = 0;
+    const N = 5000;
+    for (let i = 0; i < N; i++) if (!rollCapture(m, 2.2, rng).success) fail++;
+    expect(fail / N).toBeGreaterThan(0.1);
+    expect(fail / N).toBeLessThan(0.2);
   });
   it('捕獲率0のボスは捕まえられない', () => {
     const boss = mk('hotarunoou', 16);

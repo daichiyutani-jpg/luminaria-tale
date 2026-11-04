@@ -5,10 +5,11 @@
 
 | 種類 | 作り方 | 場所 | 状態 |
 | --- | --- | --- | --- |
-| 灯獣の絵（17種） | 手書きの SVG（図形の組み合わせ）＋ SVG フィルターで陰影・つや・きめを付ける | `src/art/monsterArt.ts` | 仮 |
+| 灯獣の絵（23種） | 手書きの SVG（左右対称に描く・つり目・炎／うろこ／毛並みの部品）＋ SVG フィルターで陰影・つや・きめを付ける | `src/art/monsterArt.ts` | 仮 |
 | マップのタイル・建物・木・草むら | Canvas 2D で描画（グラデーションの陰影・やわらかい影・きめの仕上げ） | `src/art/fieldArt.ts` | 仮 |
 | 人物（主人公・NPC）の歩行絵 | Canvas 2D で描画（4方向×2コマ） | `src/art/fieldArt.ts` | 仮 |
 | 戦闘背景・タイトル背景・演出 | Phaser の図形描画 | `src/scenes/` | 仮 |
+| 操作ボタン（十字キー・A・B・START・SELECT） | CSS で描画 | `src/ui/styles.css` | 仮 |
 | アプリのアイコン | ヒノコロの SVG を PNG に変換 | `public/icons/`（`scripts/make-icons.mjs` で再生成） | 仮 |
 | BGM（10曲） | WebAudio で合成（音符データ） | `src/audio/music.ts` | 仮 |
 | 効果音（27種） | WebAudio で合成 | `src/audio/audio.ts` | 仮 |

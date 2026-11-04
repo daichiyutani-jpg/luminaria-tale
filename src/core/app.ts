@@ -20,13 +20,21 @@ import { BootScene } from '../scenes/BootScene';
 import { FieldScene, type FieldHost } from '../scenes/FieldScene';
 import { TitleScene } from '../scenes/TitleScene';
 import { runBattle, type BattleConfig } from '../ui/battleUI';
-import { alertBox, choose, confirm, say, toast } from '../ui/dialog';
+import { alertBox, choose, confirm, isDialogOpen, say, toast } from '../ui/dialog';
+import { mountDeck } from '../ui/gamepad';
 import { clear, formatTime, h, uiRoot } from '../ui/dom';
 import { offerEvolution } from '../ui/growth';
 import { runScript, type ScriptHost } from '../ui/scriptRunner';
 import { openBox, openMainMenu, openReport, openSettings, openShop } from '../ui/screens';
 import { session } from './session';
-import type { Facing } from './types';
+
+/** プレイ画面（上の画面部分）の大きさ。CSS ピクセル */
+function screenSize(): { w: number; h: number } {
+  const el = document.getElementById('screen');
+  const w = el?.clientWidth || window.innerWidth;
+  const h = el?.clientHeight || window.innerHeight;
+  return { w, h };
+}
 
 /** ボスの素質（難易度調整：tests/balance.test.ts のシミュレーションで確認済み） */
 const BOSS_IVS = { hp: 12, atk: 12, def: 12, spa: 12, spd: 12, spe: 12 };
@@ -45,8 +53,8 @@ class App implements FieldHost {
       backgroundColor: '#1d1630',
       scale: {
         mode: Phaser.Scale.FIT,
-        width: Math.round(window.innerWidth * dpr),
-        height: Math.round(window.innerHeight * dpr),
+        width: Math.round(screenSize().w * dpr),
+        height: Math.round(screenSize().h * dpr),
         autoCenter: Phaser.Scale.NO_CENTER,
       },
       render: { antialias: true, roundPixels: false },
@@ -58,9 +66,29 @@ class App implements FieldHost {
     });
     const resize = () => {
       const d = Math.min(2, window.devicePixelRatio || 1);
-      this.game.scale.setGameSize(Math.round(window.innerWidth * d), Math.round(window.innerHeight * d));
+      const sz = screenSize();
+      this.game.scale.setGameSize(Math.round(sz.w * d), Math.round(sz.h * d));
+      this.game.scale.updateBounds();
     };
     window.addEventListener('resize', resize);
+    const screenEl = document.getElementById('screen');
+    if (screenEl && 'ResizeObserver' in window) new ResizeObserver(resize).observe(screenEl);
+    mountDeck({
+      fieldActive: () => this.fieldActive(),
+      setWalk: (d) => {
+        if (this.field) this.field.padDir = d;
+      },
+      tapWalk: (d) => {
+        if (this.field) this.field.padTap = d;
+      },
+      action: () => this.field?.pressAction(),
+      start: () => void this.openMenu(),
+      select: () => {
+        const speed = uiRoot().querySelector<HTMLElement>('.battle-ui .skip-btn');
+        if (speed) speed.click();
+        else toast('十字キー：歩く・えらぶ／A：しらべる・けってい／B：もどる／START：メニュー', 3200);
+      },
+    });
     window.visualViewport?.addEventListener('resize', resize);
     // LINE などのアプリ内ブラウザでは、ツールバーの出し入れで画面の位置が変わってもイベントが来ないことがある。
     // タッチの直前に画面の位置を測り直して、タップした場所がずれないようにする。
@@ -88,7 +116,7 @@ class App implements FieldHost {
     uiRoot().append(root);
     // 音はタップ後でないと鳴らせないので、まず「タップしてスタート」
     if (!audio.unlocked) {
-      const tap = h('div', { class: 'tap-start' }, '— タップして はじめる —');
+      const tap = h('div', { class: 'tap-start' }, '— タップ か Aボタンで はじめる —');
       root.append(tap);
       root.addEventListener(
         'pointerup',
@@ -208,7 +236,7 @@ class App implements FieldHost {
       await say(`${save.playerName}は 群島ルミナリアの「ひだまり村」で 生まれ育った。`);
       await say('この島の 灯獣（ともしびけもの）は、胸に 小さな「灯」を 宿している。');
       await say('そして 今日、あなたは 灯守（ひもり）として 旅立つ日を むかえた——。');
-      await say('（左下の 十字ボタンで 歩きます。人や物の前で「しらべる」を押すと 話したり 調べたりできます。行きたい場所を 直接タップしても 歩けます）');
+      await say('（下の 十字キーで 歩きます。人や物の前で Aボタンを押すと 話したり 調べたりできます。STARTボタンで メニュー。行きたい場所を 画面で直接タップしても 歩けます）');
       this.field!.busy = false;
     }
   }
@@ -218,58 +246,18 @@ class App implements FieldHost {
     const save = session.data;
     const place = h('div', { class: 'hud-place' });
     const party = h('div', { class: 'hud-party' });
-    const menuBtn = h('button', { class: 'btn primary hud-menu', onClick: () => void this.openMenu() }, h('span', { class: 'ico' }, '☰'), 'メニュー');
-    this.hud = h('div', { class: 'hud' }, place, party, this.makePad(), menuBtn);
+    this.hud = h('div', { class: 'hud' }, place, party);
     uiRoot().prepend(this.hud);
     this.updateHud();
     void save;
   }
 
-  /**
-   * 画面の十字ボタンと「しらべる」ボタン。
-   * キャンバスのタップに頼らず DOM のボタンで操作できるので、LINE などのアプリ内ブラウザでも確実に動く。
-   */
-  private makePad(): HTMLElement {
-    const dirs: [Facing, string][] = [['up', '▲'], ['left', '◀'], ['right', '▶'], ['down', '▼']];
-    let active: { dir: Facing; id: number } | null = null;
-    const release = (id?: number) => {
-      if (!active || (id !== undefined && id !== active.id)) return;
-      active = null;
-      if (this.field) this.field.padDir = null;
-      pad.querySelectorAll('.pressed').forEach((b) => b.classList.remove('pressed'));
-    };
-    const buttons = dirs.map(([dir, label]) => {
-      const b = h('button', { class: `pad-btn pad-${dir}`, 'aria-label': { up: '上', down: '下', left: '左', right: '右' }[dir] }, label);
-      b.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        audio.unlock();
-        try {
-          b.setPointerCapture(e.pointerId);
-        } catch {
-          /* 古いブラウザ */
-        }
-        pad.querySelectorAll('.pressed').forEach((x) => x.classList.remove('pressed'));
-        b.classList.add('pressed');
-        active = { dir, id: e.pointerId };
-        if (this.field) {
-          this.field.padDir = dir;
-          this.field.padTap = dir;
-        }
-      });
-      for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) b.addEventListener(ev, (e) => release(e.pointerId));
-      b.addEventListener('contextmenu', (e) => e.preventDefault());
-      return b;
-    });
-    const pad = h('div', { class: 'dpad' }, ...buttons);
-    const action = h('button', { class: 'pad-a', 'aria-label': 'しらべる・はなす' }, 'しらべる');
-    action.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      release();
-      this.field?.pressAction();
-    });
-    // 画面が隠れた・会話が始まった時に押しっぱなしにならないように
-    window.addEventListener('blur', () => release());
-    return h('div', { class: 'pad-wrap' }, pad, action);
+  /** フィールドを歩ける状態か（会話・メニュー・戦闘・タイトルでない） */
+  private fieldActive(): boolean {
+    if (!this.field || !this.hud || this.hud.style.display === 'none' || !this.hud.isConnected) return false;
+    if (this.field.busy || isDialogOpen()) return false;
+    const root = uiRoot();
+    return !root.querySelector('.screen, .battle-ui');
   }
 
   updateHud(): void {
