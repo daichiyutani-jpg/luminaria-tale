@@ -76,7 +76,7 @@ export function choose<T>(question: string | null, options: ChoiceOption<T>[], c
     wrap.append(
       h(
         'div',
-        { class: 'choice-box' },
+        { class: options.length > 4 ? 'choice-box many' : 'choice-box' },
         question ? h('div', { class: 'choice-q' }, question) : null,
         options.map((o) =>
           h('button', { class: 'btn choice', disabled: o.disabled, onClick: () => done(o.value) }, h('span', null, o.label), o.sub ? h('small', null, o.sub) : null),

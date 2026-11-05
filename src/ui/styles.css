@@ -217,6 +217,29 @@ body {
   border-radius: 18px;
   padding: 14px;
   animation: pop 0.14s ease-out;
+  max-height: 100%;
+  overflow-y: auto;
+}
+/* 選択肢が多い時（6体の なかま など）は 2列にして 画面に おさめる */
+.choice-box.many {
+  width: min(640px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+  padding: 10px;
+}
+.choice-box.many .choice-q,
+.choice-box.many .btn.ghost {
+  grid-column: 1 / -1;
+}
+.choice-box.many .btn.choice {
+  min-height: 0;
+  min-width: 0;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+.choice-box.many .btn.choice span {
+  max-width: 100%;
 }
 .choice-q {
   font-weight: 700;

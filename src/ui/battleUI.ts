@@ -452,14 +452,22 @@ class BattleView {
       this.msg.textContent = `${it.name}を だれに つかう？`;
       const list = h(
         'div',
-        { class: 'blist' },
+        { class: party.length > 3 ? 'blist pgrid' : 'blist' },
         party.map((m, i) => {
           const ok = itemUsableOn(itemId, m, i === this.state.sides[0].active);
+          const max = maxHp(m);
+          const ratio = m.hp / max;
           return h(
             'button',
             { class: `btn mon-card ${m.hp <= 0 ? 'fainted' : ''}`, disabled: !ok, onClick: () => { audio.se('ok'); resolve(i); } },
             h('img', { src: monsterImageUrl(getSpecies(m.speciesId).art), alt: '' }),
-            h('div', { class: 'grow' }, h('div', { class: 'nm' }, displayName(m), m.status ? h('span', { class: `st ${m.status}` }, STATUS_NAME[m.status]) : null), h('div', { class: 'lv' }, `HP ${m.hp}/${maxHp(m)}`), ok ? null : h('div', { class: 'muted' }, 'つかっても こうかがない')),
+            h(
+              'div',
+              { class: 'grow' },
+              h('div', { class: 'nm' }, displayName(m), m.status ? h('span', { class: `st ${m.status}` }, STATUS_NAME[m.status]) : null, ok ? null : h('span', { class: 'muted' }, party.length > 3 ? '（こうかなし）' : '（つかっても こうかがない）')),
+              h('div', { class: 'lv' }, `Lv${m.level}　HP ${m.hp}/${max}`),
+              h('div', { class: `hpbar ${ratio > 0.5 ? '' : ratio > 0.2 ? 'mid' : 'low'}` }, h('i', { style: `width:${ratio * 100}%` })),
+            ),
           );
         }),
       );
