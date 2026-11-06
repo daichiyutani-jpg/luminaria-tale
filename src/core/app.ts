@@ -28,6 +28,7 @@ import { clear, formatTime, h, uiRoot } from '../ui/dom';
 import { offerEvolution } from '../ui/growth';
 import { runScript, type ScriptHost } from '../ui/scriptRunner';
 import { openBox, openMainMenu, openReport, openSettings, openShop } from '../ui/screens';
+import { openTransfer } from '../ui/transfer';
 import { session } from './session';
 
 /** プレイ画面（上の画面部分）の大きさ。CSS ピクセル */
@@ -148,9 +149,10 @@ class App implements FieldHost {
       updateWaiting() ? h('button', { class: 'btn blue', onClick: () => applyUpdate() }, '⬆ 新しい版に 更新する') : null,
       any ? h('button', { class: 'btn primary', onClick: () => void this.pickSlot('continue', slots) }, 'つづきから') : null,
       h('button', { class: `btn ${any ? '' : 'primary'}`, onClick: () => void this.pickSlot('new', slots) }, 'はじめから'),
+      h('button', { class: 'btn', onClick: async () => { audio.se('ok'); if (await openTransfer()) this.showTitle(); } }, '📲 データ引き継ぎ'),
       h('button', { class: 'btn ghost', onClick: () => void openSettings({ inTitle: true, onDeleteAll: () => this.deleteFlow() }) }, 'せってい'),
     );
-    const foot = h('div', { class: 'title-foot' }, '※ 試作版です。絵・音楽は仮素材です。', h('br'), 'セーブはこの端末のブラウザ内に保存されます。');
+    const foot = h('div', { class: 'title-foot' }, '※ 試作版です。絵・音楽は仮素材です。', h('br'), 'セーブはこの端末のブラウザ内に保存されます。ホーム画面に追加した時は「データ引き継ぎ」で移せます。');
     root.append(btns, foot);
     onUpdateReady(() => {
       if (!btns.isConnected || btns.querySelector('.btn.blue')) return;

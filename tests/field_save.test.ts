@@ -5,6 +5,7 @@ import { canStand, findPath, rollEncounter, trainerSpotting } from '../src/logic
 import { giveNewMonster, newGame } from '../src/logic/game';
 import { fixedRng, seededRng } from '../src/logic/rng';
 import { _resetDbForTest, deleteSlot, exportSave, listSlots, loadGame, parseImport, saveGame } from '../src/save/saveManager';
+import { makeTransferCode, readTransferCode } from '../src/save/transferCode';
 import { checkMonsterStrict, SaveError, validateSave } from '../src/save/validate';
 
 function allFlags() {
@@ -130,6 +131,25 @@ describe('セーブとロード', () => {
     const back = parseImport(text, 2);
     expect(back.slot).toBe(2);
     expect(back.party[0].speciesId).toBe('fuwamo');
+  });
+
+  it('引き継ぎコード（圧縮した文字）で 別のスロットへ 移せる・改行がまざっても読める・壊れたコードは拒否する', async () => {
+    const s = newGame(1, 'アカリ');
+    for (let i = 0; i < 40; i++) giveNewMonster(s, 'fuwamo', 6 + (i % 5), seededRng(i), 'そよかぜ草原');
+    const code = await makeTransferCode(s);
+    expect(code.startsWith('LUMI1-')).toBe(true);
+    expect(code).toMatch(/^LUMI1-[A-Za-z0-9_-]+$/);
+    // 圧縮で 書き出しファイルより ずっと短い
+    expect(code.length).toBeLessThan(exportSave(s).length / 2);
+    const back = await readTransferCode(code, 3);
+    expect(back.slot).toBe(3);
+    expect(back.party.length + back.box.length).toBe(40);
+    const wrapped = code.replace(/(.{60})/g, '$1\n ');
+    expect((await readTransferCode(`  ${wrapped}  `, 2)).playerName).toBe('アカリ');
+    // 書き出したファイルの中身も そのまま 貼り付けられる
+    expect((await readTransferCode(exportSave(s), 1)).playerName).toBe('アカリ');
+    await expect(readTransferCode(code.slice(0, code.length - 30), 1)).rejects.toThrow(SaveError);
+    await expect(readTransferCode('こんにちは', 1)).rejects.toThrow(/引き継ぎコード/);
   });
 
   it('書きかえられたファイルや不正な灯獣は拒否する', () => {

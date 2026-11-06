@@ -26,17 +26,18 @@ import { offlineStatus } from '../pwa';
 import { alertBox, choose, chooseNumber, confirm, toast } from './dialog';
 import { clear, formatTime, h, uiRoot } from './dom';
 import { elementChip, offerEvolution } from './growth';
+import { openTransfer } from './transfer';
 
 const STAT_JP: Record<StatKey, string> = { hp: 'HP', atk: 'こうげき', def: 'ぼうぎょ', spa: 'とくこう', spd: 'とくぼう', spe: 'すばやさ' };
 
-interface Screen {
+export interface Screen {
   el: HTMLElement;
   body: HTMLElement;
   close: () => void;
   done: Promise<void>;
 }
 
-function openScreen(title: string, opts: { money?: boolean } = {}): Screen {
+export function openScreen(title: string, opts: { money?: boolean } = {}): Screen {
   let resolve!: () => void;
   const done = new Promise<void>((r) => (resolve = r));
   const body = h('div', { class: 'screen-body' });
@@ -495,6 +496,7 @@ export async function openReport(): Promise<void> {
         h('h3', null, 'データの書き出し・読み込み'),
         h('p', { class: 'note' }, 'セーブデータは この端末のブラウザの中だけに あります。ブラウザの「履歴とデータの削除」や、ホーム画面のアイコンを消すと セーブが消えることがあります。大事なデータは ときどき 書き出して 保管してください。'),
         h('div', { class: 'row' }, h('button', { class: 'btn grow', onClick: () => doExport() }, '⬇ 書き出す'), h('button', { class: 'btn ghost grow', onClick: () => doImport() }, '⬆ 読み込む')),
+        h('button', { class: 'btn', style: 'width:100%;margin-top:8px', onClick: async () => { await session.saveNow(); await openTransfer({ onlySlot: save.slot }); } }, '📲 ホーム画面の アプリなどへ 引き継ぐ（コード）'),
       ),
     );
   };
