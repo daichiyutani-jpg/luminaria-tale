@@ -14,6 +14,7 @@ const list: ItemDef[] = [
   { id: 'power_tonic', name: 'ちからのエキス', description: '戦闘中、攻撃と特攻を1段階上げる。', kind: 'battle', price: 400, stages: { atk: 1, spa: 1 }, usableInBattle: true, usableInField: false },
   { id: 'guard_tonic', name: 'まもりのエキス', description: '戦闘中、防御と特防を1段階上げる。', kind: 'battle', price: 400, stages: { def: 1, spd: 1 }, usableInBattle: true, usableInField: false },
   { id: 'dawn_stone', name: 'あかつきの石', description: '夜明けの光を閉じこめた石。ある灯獣を光に染める。', kind: 'evolve', price: 0, usableInBattle: false, usableInField: true },
+  { id: 'lotion', name: 'ローション', description: 'とろりとした ふしぎな液体。チョンボに 使うと 進化するという。さいはて諸島の 道具屋で 売っている。', kind: 'evolve', price: 100000, usableInBattle: false, usableInField: true },
   { id: 'firefly_wing', name: 'ほたるのはね', description: 'ほたる森の主の灯が残る羽。森の奥の黒霞を晴らせるかもしれない。', kind: 'key', price: 0, usableInBattle: false, usableInField: false },
   { id: 'dex_device', name: 'ともしび図鑑', description: '出会った灯獣を記録する端末。', kind: 'key', price: 0, usableInBattle: false, usableInField: false },
 ];

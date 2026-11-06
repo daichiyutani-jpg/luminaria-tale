@@ -28,7 +28,7 @@ export interface ScriptHost {
   /** ジムリーダーとの勝負（false は負けて中断） */
   gymBattle(n: number): Promise<boolean>;
   travel(): Promise<void>;
-  ending(): Promise<void>;
+  ending(kind?: 'isle'): Promise<void>;
 }
 
 export function partnerName(): string {
@@ -103,7 +103,7 @@ async function runCmds(cmds: Cmd[], host: ScriptHost): Promise<boolean> {
     else if ('gym' in c) {
       if (!(await host.gymBattle(c.gym))) return false;
     } else if ('travel' in c) await host.travel();
-    else if ('ending' in c) await host.ending();
+    else if ('ending' in c) await host.ending(c.ending === 'isle' ? 'isle' : undefined);
     else if ('giftStarter' in c) await giftStarter(c.giftStarter, c.who);
   }
   return true;

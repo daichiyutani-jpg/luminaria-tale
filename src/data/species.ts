@@ -213,10 +213,20 @@ const list: SpeciesDef[] = [
   {
     id: 'chonbo', dexNo: 23, name: 'チョンボ', category: 'まつのみこ',
     description: '千年の松の根元に ひとつだけ生えるという 伝説の灯獣。かさの奥から ただよう香りは、灯を 静かに よみがえらせる。',
-    ecology: '森の灯脈が いちばん澄んだ夜にだけ 姿をあらわす。生まれつき完成した姿で、進化はしない。香りをかいだ者は 深い眠りに落ちるという。',
+    ecology: '森の灯脈が いちばん澄んだ夜にだけ 姿をあらわす。香りをかいだ者は 深い眠りに落ちるという。さいはて諸島の ふしぎな液体を 使うと、すがたが 変わると 伝えられている。',
     elements: ['sprout', 'stone'], baseStats: { hp: 100, atk: 92, def: 108, spa: 96, spd: 104, spe: 70 },
     baseExp: 260, catchRate: 18, rarity: 'legend', role: 'tank', habitat: 'ほたる森の奥（ホタルノオウを鎮めた後）', art: 'chonbo', color: '#a8743a',
     learnset: [[1, 'sap_drain'], [1, 'iron_shell'], [1, 'rock_drill'], [24, 'thorn_rush'], [30, 'spring_heal'], [40, 'chonbo_katakunaru'], [45, 'matsu_kaori']],
+    evolutions: [{ to: 'bokki', condition: { kind: 'item', itemId: 'lotion' }, hint: 'ボッキーへ。全身に 血管が うき出た 力の すがた。専用技「がまん」を おぼえる' }],
+  },
+  // チョンボの進化先（2026-11-06 本人決定）：さいはて諸島の道具屋の ローション（100,000ルクス）で進化
+  {
+    id: 'bokki', dexNo: 101, name: 'ボッキー', category: 'ちからのまつのみこ', evolvesFrom: 'chonbo',
+    description: 'ローションを あびた チョンボが、全身の 血管を うき上がらせて 力を ためこんだ すがた。じっと がまんした あとの 一撃は 山をも くだく。',
+    ecology: 'さいはて諸島で 見つかった ふしぎな液体が きっかけで 生まれる。ふだんは ふるえながら 力を ためている。',
+    elements: ['sprout', 'stone'], baseStats: { hp: 110, atk: 128, def: 118, spa: 96, spd: 104, spe: 74 },
+    baseExp: 290, catchRate: 0, rarity: 'legend', role: 'attacker', habitat: 'チョンボに ローションを 使う', art: 'bokki', color: '#b8603a',
+    learnset: [[1, 'gaman'], [24, 'thorn_rush'], [30, 'spring_heal'], [40, 'chonbo_katakunaru'], [45, 'matsu_kaori'], [65, 'mountain_break']],
   },
 ];
 

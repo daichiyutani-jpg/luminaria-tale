@@ -29,6 +29,8 @@ export interface BattleSide {
   stages: Stages;
   /** 「かたくなる」の残りターン（0 で効果なし） */
   guard?: number;
+  /** ため技（がまん）で 力をためている技の ID。次のターンは 行動を えらべず、この技で こうげきする */
+  charging?: string;
 }
 
 export interface BattleState {
@@ -198,8 +200,10 @@ function setHp(state: BattleState, side: SideIndex, hp: number, ev: BattleEvent[
 
 function executeMove(state: BattleState, side: SideIndex, moveIndex: number, rng: Rng, ev: BattleEvent[]): void {
   const user = active(state, side);
-  const foe: SideIndex = side === 0 ? 1 : 0;
   if (user.hp <= 0) return;
+  // ため技の2ターン目：えらんだ行動の かわりに、ためた力で こうげきする
+  const releasing = state.sides[side].charging;
+  if (releasing) state.sides[side].charging = undefined;
 
   // 行動前の状態異常
   if (user.status === 'sleep') {
@@ -218,11 +222,30 @@ function executeMove(state: BattleState, side: SideIndex, moveIndex: number, rng
     return;
   }
 
+  if (releasing) {
+    const move = getMove(releasing);
+    ev.push({ t: 'move', side, moveId: move.id });
+    ev.push({ t: 'msg', text: `${sideName(state, side)}は ためた力を いっきに ときはなった！` });
+    hitWith(state, side, move, rng, ev);
+    return;
+  }
   const slot = user.moves[moveIndex];
   const move = slot && slot.pp > 0 ? getMove(slot.id) : getMove('struggle');
   if (slot && slot.pp > 0) slot.pp--;
   ev.push({ t: 'move', side, moveId: move.id });
   ev.push({ t: 'msg', text: `${sideName(state, side)}の ${move.name}！` });
+  if (move.effect?.charge) {
+    state.sides[side].charging = move.id;
+    ev.push({ t: 'msg', text: `${sideName(state, side)}は じっと がまんして 力を ためている……！` });
+    return;
+  }
+  hitWith(state, side, move, rng, ev);
+}
+
+/** 技の あたり判定から 効果まで（技名の表示と PP の消費は 呼ぶ側） */
+function hitWith(state: BattleState, side: SideIndex, move: MoveDef, rng: Rng, ev: BattleEvent[]): void {
+  const user = active(state, side);
+  const foe: SideIndex = side === 0 ? 1 : 0;
 
   const targetSide: SideIndex = move.target === 'self' ? side : foe;
   // 相手が「かたくなる」の間は、相手に向けた技は効かない
@@ -326,6 +349,7 @@ function handleFaints(state: BattleState, ev: BattleEvent[]): void {
     if (mon.hp > 0 || state.needsSwitch[side]) continue;
     ev.push({ t: 'faint', side });
     ev.push({ t: 'msg', text: `${sideName(state, side)}は たおれた！` });
+    state.sides[side].charging = undefined;
     if (side === 1 && state.kind !== 'pvp') awardExp(state, mon, ev);
     if (alive(state.sides[side].party) > 0) state.needsSwitch[side] = true;
   }
@@ -362,6 +386,7 @@ function finish(state: BattleState, result: BattleResult, ev: BattleEvent[]): vo
   for (const side of state.sides) {
     side.stages = emptyStages();
     side.guard = 0;
+    side.charging = undefined;
   }
   ev.push({ t: 'end', result });
 }
@@ -375,6 +400,7 @@ function doSwitch(state: BattleState, side: SideIndex, to: number, ev: BattleEve
   s.active = to;
   s.stages = emptyStages();
   s.guard = 0;
+  s.charging = undefined;
   state.needsSwitch[side] = false;
   ev.push({ t: 'send', side, index: to });
   ev.push({ t: 'msg', text: mine ? `いけっ、${displayName(target)}！` : `${s.name}は ${displayName(target)}を くりだした！` });
@@ -425,7 +451,8 @@ export function aiChooseMove(state: BattleState, side: SideIndex, rng: Rng, smar
     const e = mv.effect;
     if (mv.category !== 'status') {
       const stab = myEls.includes(mv.element) ? STAB : 1;
-      return mv.power * effectiveness(mv.element, foeEls) * stab * (Math.min(100, mv.accuracy) / 100);
+      // ため技は 2ターン かかるので 半分に見る
+      return (mv.power * effectiveness(mv.element, foeEls) * stab * (Math.min(100, mv.accuracy) / 100)) / (e?.charge ? 2 : 1);
     }
     if (e?.guard) return (state.sides[side].guard ?? 0) > 0 ? 0 : me.hp / maxHp(me) < 0.6 ? 90 : 30;
     if (e?.heal) return me.hp / maxHp(me) < 0.45 ? 120 : 5;
@@ -450,6 +477,7 @@ export function aiChooseMove(state: BattleState, side: SideIndex, rng: Rng, smar
 }
 
 function priorityOf(state: BattleState, side: SideIndex, action: Action): number {
+  if (state.sides[side].charging) return 0;
   if (action.type === 'run') return 10;
   if (action.type === 'switch' || action.type === 'item' || action.type === 'capture') return 6;
   const slot = active(state, side).moves[action.index];
@@ -551,6 +579,8 @@ export function resolveTurn(state: BattleState, actions: [Action, Action], rng: 
   const ev: BattleEvent[] = [];
   if (state.result || state.needsSwitch[0] || state.needsSwitch[1]) return ev;
   state.turn++;
+  // ため技の2ターン目は 行動を えらべない（どの行動が来ても ためた力で こうげきする）
+  actions = actions.map((a, i) => (state.sides[i].charging ? { type: 'move', index: 0 } : a)) as [Action, Action];
 
   const order: SideIndex[] = [0, 1];
   const pr = [priorityOf(state, 0, actions[0]), priorityOf(state, 1, actions[1])];

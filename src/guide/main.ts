@@ -15,7 +15,7 @@ import { SCRIPTS, type Cmd } from '../data/scripts';
 import { SHOPS } from '../data/shops';
 import { SPECIES, SPECIES_LIST, STARTERS } from '../data/species';
 import { TRAINERS, type TrainerDef } from '../data/trainers';
-import { GYMS } from '../data/world';
+import { GYMS, ISLE_BOSS_LEVEL, TOKOYO2_LEVEL } from '../data/world';
 import { PARTY_MAX } from '../logic/game';
 import { MAX_LEVEL } from '../logic/stats';
 
@@ -108,6 +108,35 @@ stages.push({
 ヨルと話すと ラスボス <b>トコヨノヤミ（Lv70・かげ）</b> との戦い。ひかりの技が 2倍で効きます。かげの技は いまひとつ。
 専用技「とこよのよる」は 威力120の大技なので、HPが半分を切ったら 早めに回復を。まんたんのくすり と げんきのかけら を多めに持っていきましょう。めやすは 主力 Lv68〜72。
 倒すと エンディング。その後は <a href="#second">2周目</a> が始まります。`,
+});
+
+// ───────────── さいはて諸島（クリア後の追加エリア） ─────────────
+stages.push({
+  title: '後日談　2回目のトコヨノヤミ',
+  maps: [],
+  text: `2周目で <b>きらめく灯章を10個</b> そろえると、黒霞の洞窟の最奥に トコヨノヤミが ふたたび現れます（<b>Lv${TOKOYO2_LEVEL}</b>）。1回目と同じく ひかりの技が2倍。
+倒すと 灯の渡し舟で <b>さいはて諸島</b>（しろなみ港）へ 行けるようになります。島には 本島にいない灯獣が49種いて、野生も トレーナーも 本島より ずっと強いです（野生 Lv80〜96）。`,
+});
+const ISLE_STAGE: [string, string, string | null, string][] = [
+  ['shiranami_port', 'しろなみ港', 'sasanami_coast', '島の入口。灯の家の「さいはての道具屋」で まんたんのくすり・げんきのかけら が買えます。<b>ローション（100,000ルクス）</b> もここで売っています（チョンボに使うと ボッキーに進化）。'],
+  ['kokemusu_village', 'こけむす里', 'inishie_jukai', 'いにしえ樹海は 木々の深い森の道。'],
+  ['tsurara_village', 'つらら村', 'koorikaze_pass', 'こおりかぜ峠は 寒い山道。'],
+  ['hoshifuru_hill', 'ほしふる丘', 'nagareboshi_field', 'ながれぼし野は 島の道でいちばん強い野生（Lv89〜93）。'],
+  ['hate_capital', 'さいはての都', null, '島の最北。北の出口から さいはての灯台へ。'],
+];
+for (const [townId, townName, routeId, note] of ISLE_STAGE) {
+  stages.push({
+    title: `さいはて諸島　${townName}`,
+    maps: [MAPS[townId], routeId ? MAPS[routeId] : undefined].filter((m): m is MapDef => !!m),
+    text: `${note}\n島の町には ジムは ありません。灯の家・道具屋・渡し舟は使えます。`,
+  });
+}
+stages.push({
+  title: '最終決戦　さいはての灯台',
+  maps: [MAPS.saihate_lighthouse, MAPS.saihate_top].filter(Boolean),
+  text: `灯台の中の野生は Lv92〜96。灯守たち、そして最後にライバルの <b>カイト（Lv98〜99）</b> が待っています。
+灯台の頂上で <b>ハテノヌシ（Lv${ISLE_BOSS_LEVEL}・ひかり／かげ）</b> と対決。捕まえられません。専用技「はてのひかり」は威力130。主力を Lv95〜100 まで育て、回復の道具を たっぷり持って挑みましょう。
+倒すと 本当のエンディング「さいはての 灯」。`,
 });
 
 // ───────────── 地図（1マス=1色） ─────────────
@@ -317,7 +346,7 @@ const starterLines = STARTERS.map((id) => {
 
 const NAV: [string, string][] = [
   ['start', 'はじめに'], ['chart', '攻略チャート'], ['starters', '最初の3匹'], ['legend', '伝説とボス'], ['second', '2周目'],
-  ['dex', '図鑑100種'], ['moves', '技'], ['items', '道具'], ['types', '相性表'], ['quests', 'クエスト'], ['link', 'つうしん'], ['tips', 'コツ'],
+  ['dex', `図鑑${SPECIES_LIST.length}種`], ['moves', '技'], ['items', '道具'], ['types', '相性表'], ['quests', 'クエスト'], ['link', 'つうしん'], ['tips', 'コツ'],
 ];
 
 const root = document.getElementById('guide')!;
@@ -361,12 +390,13 @@ root.innerHTML = `
   <div class="cards">${legendSpecies.map(dexCard).join('')}</div>
   <ul class="list">
     <li><b>チョンボ</b>：あけぼの神殿町（ジム8）の北、たそがれ街道の古い松の前にいます。Lv45。捕まえにくいですが 捕まえられます。負けても 逃げても また戦えます。専用技「かたくなる」は 使ったターンから3ターン こちらの技を受けつけないので、その間は 回復や 能力アップの時間にしましょう。HPを赤まで削ってから たいようランタン・ほしのランタン を投げるのが おすすめ。</li>
-    <li><b>ホタルノオウ</b>（第1章のボス）・<b>トコヨノヤミ</b>（ラスボス）は 捕まえられません。</li>
+    <li><b>ボッキー</b>：チョンボに <b>ローション</b>（さいはて諸島 しろなみ港の道具屋・100,000ルクス）を使うと進化します。専用技「<b>がまん</b>」は 1ターン目は動かずに力をため、2ターン目に 威力300 の攻撃をします（命中50%・2ターン目は交代できません）。</li>
+    <li><b>ホタルノオウ</b>（第1章のボス）・<b>トコヨノヤミ</b>（ラスボス）・<b>ハテノヌシ</b>（さいはての灯台・Lv100）は 捕まえられません。</li>
   </ul>
 </section>
 
 <section id="second"><h2>2周目（クリア後）</h2>
-  <p>トコヨノヤミを倒したあと、各ジムのリーダーに話すと <b>本気のチーム（Lv70〜90）</b> で再戦できます。初めて勝つと「きらめく灯章」と ほしのランタン などがもらえ、何度でも挑戦できます。各ジムの2周目のチームは <a href="#chart">攻略チャート</a> の各ジムに書いてあります。</p>
+  <p>トコヨノヤミを倒したあと、各ジムのリーダーに話すと <b>本気のチーム（Lv70〜90）</b> で再戦できます。初めて勝つと「きらめく灯章」と ほしのランタン などがもらえ、何度でも挑戦できます。きらめく灯章が10個そろうと 2回目のトコヨノヤミが現れ、倒すと <b>さいはて諸島</b> へ行けます（→ <a href="#chart">攻略チャート</a> の後半）。各ジムの2周目のチームは <a href="#chart">攻略チャート</a> の各ジムに書いてあります。</p>
   <div class="tablewrap"><table class="t"><thead><tr><th>ジム</th><th>町</th><th>リーダー</th><th>1周目 最高Lv</th><th>2周目 最高Lv</th></tr></thead><tbody>${GYMS.map((g) => `<tr><td>${g.n}</td><td>${esc(g.townName)}</td><td>${esc(g.leader)}</td><td>${g.ace}</td><td>${g.rematchAce}</td></tr>`).join('')}</tbody></table></div>
 </section>
 

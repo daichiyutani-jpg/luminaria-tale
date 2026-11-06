@@ -278,10 +278,10 @@ describe('進化の設計', () => {
 });
 
 describe('伝説の灯獣 チョンボ', () => {
-  it('進化しない伝説の灯獣で、捕まえられる（ただし捕まえにくい）', () => {
+  it('伝説の灯獣で、捕まえられる（ただし捕まえにくい）。進化はローションでボッキーだけ', () => {
     const c = SPECIES.chonbo;
     expect(c.rarity).toBe('legend');
-    expect(c.evolutions ?? []).toHaveLength(0);
+    expect(c.evolutions).toEqual([expect.objectContaining({ to: 'bokki', condition: { kind: 'item', itemId: 'lotion' } })]);
     expect(c.evolvesFrom).toBeUndefined();
     expect(c.catchRate).toBeGreaterThan(0);
     expect(c.catchRate).toBeLessThanOrEqual(20);
@@ -434,12 +434,12 @@ describe('パーティー・道具・クエスト', () => {
 });
 
 describe('10の町・ジム・ボス（2026-11-05）', () => {
-  it('灯獣は100種', () => {
-    expect(SPECIES_LIST).toHaveLength(100);
-    expect(new Set(SPECIES_LIST.map((s) => s.dexNo)).size).toBe(100);
+  it('灯獣は151種（本編100＋さいはて諸島51）で、図鑑番号は重ならない', () => {
+    expect(SPECIES_LIST).toHaveLength(151);
+    expect(new Set(SPECIES_LIST.map((s) => s.dexNo)).size).toBe(151);
   });
   it('町は10、それぞれにジムがあり、リーダーはだんだん強くなる', () => {
-    expect(TRAVEL_TOWNS).toHaveLength(10);
+    expect(TRAVEL_TOWNS.filter((t) => !t.unlock && !t.id.match(/^(shiranami|kokemusu|tsurara|hoshifuru|hate_)/))).toHaveLength(10);
     expect(GYMS).toHaveLength(10);
     for (const t of TRAVEL_TOWNS) expect(MAPS[t.id], t.id).toBeTruthy();
     const sorted = [...GYMS].sort((a, b) => a.n - b.n);

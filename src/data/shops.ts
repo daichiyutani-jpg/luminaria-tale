@@ -38,6 +38,20 @@ export const SHOPS: Record<string, ShopDef> = {
       { itemId: 'guard_tonic' },
     ],
   },
+  // さいはて諸島の 灯の家（2026-11-06 本人決定：ローション 100,000ルクス＝チョンボの進化アイテム）
+  isle: {
+    id: 'isle',
+    name: 'さいはての道具屋',
+    stock: [
+      { itemId: 'max_potion' },
+      { itemId: 'cure_all' },
+      { itemId: 'revive_shard' },
+      { itemId: 'bright_lantern' },
+      { itemId: 'power_tonic' },
+      { itemId: 'guard_tonic' },
+      { itemId: 'lotion' },
+    ],
+  },
 };
 
 /** 売値は買値の半分（売れないものは0） */

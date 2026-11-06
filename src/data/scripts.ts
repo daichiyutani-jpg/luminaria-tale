@@ -29,7 +29,8 @@ export type Cmd =
   /** 灯の渡し舟（行ったことのある町へ） */
   | { travel: true }
   /** エンディング */
-  | { ending: true };
+  /** true＝本編のエンディング、'isle'＝さいはて諸島のエンディング */
+  | { ending: true | 'isle' };
 
 export const SCRIPTS: Record<string, Cmd[]> = {
   // ── 家 ─────────────────────────────

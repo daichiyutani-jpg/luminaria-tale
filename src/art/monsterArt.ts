@@ -589,7 +589,27 @@ const fuwamo: Recipe = () =>
   );
 
 // ───────────────────────── 伝説：チョンボ（千年の松の根元に生える灯獣） ─────────────────────────
-const chonbo: Recipe = () =>
+// ボッキーの 血管（軸と かさに うき出る。太い線＋明るいふちで もり上がって見せる）
+const BOKKI_VEIN_PATHS = [
+  'M100 186 C96 170 104 158 98 146 C94 138 100 128 96 120',
+  'M98 146 C88 142 84 134 80 126',
+  'M100 160 C110 154 112 146 118 140',
+  'M84 184 C80 172 86 162 80 150 C77 144 78 138 74 132',
+  'M116 184 C120 172 114 164 120 154 C123 148 122 142 126 136',
+  'M80 150 C86 148 90 152 94 150',
+  'M120 154 C114 152 110 156 106 154',
+  'M100 18 C96 30 102 40 96 52 C92 60 96 70 92 78',
+  'M96 52 C86 50 80 56 72 54',
+  'M100 34 C110 40 108 52 116 58 C120 62 118 70 122 76',
+  'M70 36 C74 46 70 56 66 64',
+  'M130 36 C126 46 130 56 134 64',
+];
+const BOKKI_VEINS = BOKKI_VEIN_PATHS.map(
+  (d) => `<path d="${d}" stroke="#7a1a2a" stroke-width="5" fill="none" stroke-linecap="round" opacity=".85"/><path d="${d}" stroke="#d8506a" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="${d}" stroke="#ffb0b8" stroke-width="0.9" fill="none" stroke-linecap="round" opacity=".8" transform="translate(-0.8 -0.8)"/>`,
+).join('') + [[62, 150], [138, 146], [100, 196]].map(([x, y]) => `<path d="M${x} ${y} l-5 3 M${x} ${y} l5 3" stroke="#ff8a6a" stroke-width="2" opacity=".8"/>`).join('');
+
+/** チョンボの絵。power=true でボッキー（血管が うき出た 力の すがた） */
+const matsuArt = (power: boolean) =>
   svg(
     `<circle cx="100" cy="100" r="98" fill="url(#caura)"/>
     ${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
@@ -614,10 +634,15 @@ const chonbo: Recipe = () =>
     ${P('M100 12 C78 12 58 28 54 54 C52 68 56 78 66 81 C78 83 90 83 100 83', 'url(#cap)')}
     ${mir([72, 82, 92].map((x) => `<path d="M100 16 Q${x} 36 ${x - 12} 78" stroke="#3a2008" stroke-width="1.4" fill="none" opacity=".45"/>`).join(''))}
     ${mir(`<path d="M66 46 l8 -3 M78 30 l6 -4 M60 64 l8 -2" stroke="#e8c898" stroke-width="2" opacity=".6"/>`)}
-    ${mir(eye(87, 104, 8.5, '#ffd84a', true))}
-    <path d="M90 115 Q100 111 110 115" fill="none" ${sw(2)}/>`,
-    rad('stem', ['#fffaf0', '#ecdcbc', '#a8875a']) + rad('cap', ['#d8a46a', '#9a5e2a', '#4a2a10'], '40%', '25%', '80%') + lin('rope', ['#f6e6b8', '#c8a050', '#8a6420']) + rad('caura', ['rgba(255,240,170,.7)', 'rgba(220,240,140,.25)', 'rgba(200,230,120,0)'], '50%', '50%', '50%'),
+    ${power ? BOKKI_VEINS : ''}
+    ${mir(eye(87, 104, 8.5, power ? '#ff5a3a' : '#ffd84a', true))}
+    ${power ? mir('<path d="M78 94 L94 99" stroke="#2a1008" stroke-width="3.4" stroke-linecap="round"/>') : ''}
+    ${power ? '<path d="M88 117 L112 117" stroke="#2a1008" stroke-width="3" stroke-linecap="round"/><path d="M92 117 L92 120 M100 117 L100 120 M108 117 L108 120" stroke="#2a1008" stroke-width="1.4"/>' : '<path d="M90 115 Q100 111 110 115" fill="none" ' + sw(2) + '/>'}`,
+    (power ? rad('stem', ['#ffe8d8', '#e8b898', '#a8664a']) : rad('stem', ['#fffaf0', '#ecdcbc', '#a8875a'])) + (power ? rad('cap', ['#e8946a', '#a8462a', '#5a1a10'], '40%', '25%', '80%') : rad('cap', ['#d8a46a', '#9a5e2a', '#4a2a10'], '40%', '25%', '80%')) + lin('rope', ['#f6e6b8', '#c8a050', '#8a6420']) + (power ? rad('caura', ['rgba(255,150,110,.75)', 'rgba(240,90,70,.3)', 'rgba(220,60,60,0)'], '50%', '50%', '50%') : rad('caura', ['rgba(255,240,170,.7)', 'rgba(220,240,140,.25)', 'rgba(200,230,120,0)'], '50%', '50%', '50%')),
   );
+
+const chonbo: Recipe = () => matsuArt(false);
+const bokki: Recipe = () => matsuArt(true);
 
 export const MONSTER_ART: Record<string, Recipe> = {
   hinokoro,
@@ -643,6 +668,7 @@ export const MONSTER_ART: Record<string, Recipe> = {
   yamitourou,
   hotarunoou,
   chonbo,
+  bokki,
 };
 
 // ───────────────────────── 設計図から描く灯獣（2つ目の町以降） ─────────────────────────

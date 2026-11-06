@@ -309,6 +309,8 @@ class BattleView {
   }
 
   private mainCommand(): Promise<Action | 'back'> {
+    // ため技の2ターン目は えらべない
+    if (this.state.sides[0].charging) return Promise.resolve({ type: 'move', index: 0 });
     return new Promise((resolve) => {
       const mon = active(this.state, 0);
       this.msg.textContent = `${displayName(mon)}は どうする？`;

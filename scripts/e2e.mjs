@@ -574,7 +574,7 @@ try {
   await gp.goto(ORIGIN + BASE + 'guide.html');
   await gp.locator('#dexlist .dex').first().waitFor({ timeout: 10_000 });
   const guide = await gp.evaluate(() => ({ h1: document.querySelector('h1')?.textContent, dex: document.querySelectorAll('#dexlist .dex').length, maps: document.querySelectorAll('svg.map').length }));
-  check('完全攻略ガイドが オフラインでも開け、図鑑100種と地図が出る', guide.h1 === '完全攻略ガイド' && guide.dex === 100 && guide.maps > 20, JSON.stringify(guide));
+  check('完全攻略ガイドが オフラインでも開け、図鑑151種と地図が出る', guide.h1 === '完全攻略ガイド' && guide.dex === 151 && guide.maps > 20, JSON.stringify(guide));
   await gp.close();
 
   check('外部ドメインへの通信がない', external.length === 0, external.slice(0, 3).join(', '));

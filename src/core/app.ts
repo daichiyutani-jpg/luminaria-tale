@@ -6,7 +6,7 @@ import { monsterImageUrl } from '../art/monsterArt';
 import { audio } from '../audio/audio';
 import { getItem } from '../data/items';
 import { getMap, type MapDef, type NpcDef, type ObjectDef } from '../data/maps';
-import { getSpecies } from '../data/species';
+import { getSpecies, SPECIES_LIST } from '../data/species';
 import { rivalStarterFor, TRAINERS } from '../data/trainers';
 import { GYMS, townArrival, TRAVEL_TOWNS } from '../data/world';
 import { getItem as itemDef } from '../data/items';
@@ -482,7 +482,7 @@ class App implements FieldHost {
       gymBattle: (n) => this.gymBattle(n, host),
       travel: async () => {
         const save = session.data;
-        const towns = TRAVEL_TOWNS.filter((t) => t.id === 'village' || save.flags[`visited_${t.id}`]);
+        const towns = TRAVEL_TOWNS.filter((t) => t.id === 'village' || save.flags[`visited_${t.id}`] || (t.unlock && save.flags[t.unlock]));
         const id = await choose<string>('どの町へ 行く？', towns.map((t) => ({ label: t.name, value: t.id })), '');
         if (!id) return;
         await say('灯の舟が 光の川を すべっていく……');
@@ -490,7 +490,7 @@ class App implements FieldHost {
         save.location = { mapId: a.mapId, x: a.x, y: a.y, facing: 'down' };
         scene.warpTo(a.mapId, a.x, a.y, 'down');
       },
-      ending: () => this.ending(),
+      ending: (kind) => (kind === 'isle' ? this.isleEnding() : this.ending()),
     };
     return host;
   }
@@ -544,6 +544,11 @@ class App implements FieldHost {
       await say(`${gym.badge}が きらきらと かがやきだした！
 （きらめく灯章 ${GYMS.filter((g) => save.flags[`badge2_${g.n}`]).length} / ${GYMS.length}）`);
       await give(gym.rematchReward);
+    }
+    // 以前の版で すでに 10個 そろえていた セーブも、再戦に 勝てば ここで 気づける
+    if (GYMS.every((g) => save.flags[`badge2_${g.n}`]) && !save.flags.all_badges2) {
+      save.flags.all_badges2 = true;
+      await say('きらめく灯章が 10個 そろった！\n……どこか 遠くで、黒霞が ふたたび うずを まいた 気がする。（黒霞の洞窟の 最奥へ）');
     }
     void session.autosave('gym');
     return true;
@@ -612,7 +617,30 @@ class App implements FieldHost {
         h('p', null, `${save.playerName}と なかまたちは、トコヨノヤミを 鎮め、ルミナリアの 島々に 朝を 取りもどした。`),
         h('p', null, '灯は 奪いあうものではなく、分けあうもの——。島じゅうの 灯が、いつもより 少しだけ 明るく ともっている。'),
         h('p', { style: 'font-size:13px;opacity:.9' }, `プレイ時間 ${formatTime(save.playTimeSec)}　図鑑 ${Object.values(save.dex).filter((v) => v === 'caught').length}種`),
-        h('p', { style: 'font-size:13px;opacity:.9' }, 'クリアおめでとう！ これからは 各地の ジムリーダーが 本気のチーム（Lv72〜90）で 再戦してくれます。きらめく灯章を 10個 集めよう。図鑑100種も めざしてね。'),
+        h('p', { style: 'font-size:13px;opacity:.9' }, 'クリアおめでとう！ これからは 各地の ジムリーダーが 本気のチーム（Lv72〜90）で 再戦してくれます。きらめく灯章を 10個 集めると、もう一度 何かが 起こるかも……。'),
+        h('button', { class: 'btn primary', onClick: () => { audio.se('ok'); el.remove(); resolve(); } }, '冒険を つづける'),
+      );
+      uiRoot().append(el);
+    });
+    audio.playBgm(this.field?.map.bgm ?? 'town');
+  }
+
+  /** さいはて諸島の ボス（ハテノヌシ Lv100）を倒した時 */
+  private async isleEnding(): Promise<void> {
+    const save = session.data;
+    save.flags.isle_boss_down = true;
+    await session.saveNow();
+    audio.playBgm('ending');
+    await new Promise<void>((resolve) => {
+      const el = h(
+        'div',
+        { class: 'ending' },
+        h('div', { style: 'font-size:14px;letter-spacing:.3em' }, 'THE TRUE END'),
+        h('h2', null, 'さいはての 灯'),
+        h('p', null, `${save.playerName}と なかまたちは、さいはて諸島の 主 ハテノヌシに 灯を 認められた。`),
+        h('p', null, 'さいはての灯台の 光は、海を こえて 本島まで とどき、島じゅうの 夜を やさしく 照らしている。'),
+        h('p', { style: 'font-size:13px;opacity:.9' }, `プレイ時間 ${formatTime(save.playTimeSec)}　図鑑 ${Object.values(save.dex).filter((v) => v === 'caught').length} / ${SPECIES_LIST.length}種`),
+        h('p', { style: 'font-size:13px;opacity:.9' }, 'ほんとうの クリア おめでとう！ さいはて諸島の 灯獣を 集めて、図鑑の 完成を めざそう。'),
         h('button', { class: 'btn primary', onClick: () => { audio.se('ok'); el.remove(); resolve(); } }, '冒険を つづける'),
       );
       uiRoot().append(el);

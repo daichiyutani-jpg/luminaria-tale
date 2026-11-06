@@ -151,9 +151,11 @@ export function isValidAction(s: BattleState, side: SideIndex, a: unknown): a is
   const mon = sd.party[sd.active];
   if (x.type === 'move') {
     if (typeof x.index !== 'number' || !Number.isInteger(x.index)) return false;
+    if (sd.charging) return true; // ため技の2ターン目（どの行動でも ためた力の こうげきになる）
     if (usableMoves(mon).length === 0) return x.index === 0; // わるあがき
     return x.index >= 0 && x.index < mon.moves.length && mon.moves[x.index].pp > 0;
   }
+  if (sd.charging) return false;
   if (x.type === 'switch') return isValidSwitch(s, side, x.to);
   return false;
 }

@@ -22,6 +22,16 @@ const list: QuestDef[] = [
     goal: { kind: 'flag', flag: 'final_boss_down' }, reward: { money: 20000, items: [['star_lantern', 3]] }, reportTo: 'ソラネ博士',
   },
   {
+    id: 'main_5', name: 'きらめく灯章', kind: 'main', startFlag: 'final_boss_down',
+    description: '各地の ジムリーダーが 本気のチームで 待っている。きらめく灯章を 10個 そろえると、黒霞の洞窟の 最奥で 何かが 起こるらしい。',
+    goal: { kind: 'flag', flag: 'final_boss2_down' }, reward: { money: 30000, items: [['star_lantern', 3]] }, reportTo: 'ソラネ博士',
+  },
+  {
+    id: 'main_6', name: 'さいはての灯', kind: 'main', startFlag: 'final_boss2_down',
+    description: '灯の渡し舟で さいはて諸島へ。5つの町を ぬけて、さいはての灯台の 最上階に いる 主（Lv100）に 会いに行こう。',
+    goal: { kind: 'flag', flag: 'isle_boss_down' }, reward: { money: 100000, items: [['star_lantern', 5]] }, reportTo: 'ソラネ博士',
+  },
+  {
     id: 'sub_lost_fuwamo', name: 'まいごのモコ', kind: 'sub', startFlag: 'nono_asked',
     description: 'そよかぜ草原のノノが、フワモの「モコ」を探している。草原のどこかにいるらしい。',
     goal: { kind: 'flag', flag: 'moco_returned' }, reward: { items: [['dawn_stone', 1]] }, reportTo: 'ノノ',

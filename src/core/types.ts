@@ -42,6 +42,8 @@ export interface MoveEffect {
   recoil?: number;
   /** 使ったターンを含めて この数のターン、相手の技（相手が対象のもの）を受けつけない */
   guard?: number;
+  /** ため技：使ったターンは力をためるだけ（動けない）。次のターンに自動で この技の威力・命中率で こうげきする */
+  charge?: boolean;
 }
 
 export interface MoveDef {

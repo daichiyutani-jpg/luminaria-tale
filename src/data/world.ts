@@ -750,6 +750,236 @@ Object.assign(WORLD_SCRIPTS, {
   shop_town: [{ shop: 'town' }],
 });
 
+
+// ───────────────────────── さいはて諸島（2回目のトコヨノヤミを倒した後の 追加エリア） ─────────────────────────
+// 2026-11-06 本人決定：町5つ・ここでしか野生で出ない灯獣・難易度は高め・最後に Lv100 のボス。
+// 流れ：きらめく灯章が10個 → 黒霞の洞窟の最奥に トコヨノヤミが ふたたび（Lv92）→ 倒すと 灯の渡し舟で さいはて諸島へ
+//  しろなみ港 → ささなみ海岸 → こけむす里 → いにしえの樹海 → つらら村 → こおりかぜ峠 → ほしふる丘 → ながれぼし原
+//  → はてのみやこ → さいはての灯台 → 灯台の最上階（ハテノヌシ Lv100）
+// ジムは無い。町には 灯の家（回復・さいはての道具屋・渡し舟）がある。
+export const ISLE_OPEN_FLAG = 'isle_open';
+export const ISLE_BOSS_LEVEL = 100;
+export const TOKOYO2_LEVEL = 92;
+
+const PI = {
+  shiro: { ground: '#e4eef0', path: '#f2e8cc', grass: '#7ab89a', tree: '#3a6a6a', accent: '#9ae0f0' },
+  koke: { ground: '#9ac080', path: '#c8c098', grass: '#4a8a4a', tree: '#1f4a2a', accent: '#c8f07a' },
+  tsurara: { ground: '#e8f0f8', path: '#d8e0ec', grass: '#9ab8c8', tree: '#4a6a8a', accent: '#c8f0ff' },
+  hoshi: { ground: '#9aa0c8', path: '#d0c8e0', grass: '#6a78b0', tree: '#2a3060', accent: '#fff0a0' },
+  hate: { ground: '#e8dcf0', path: '#f0e4d0', grass: '#a890c8', tree: '#4a3a6a', accent: '#ffd8a0' },
+  tower: { ground: '#4a4458', path: '#5a5468', grass: '#3a3448', tree: '#1e1a28', accent: '#ffd87a' },
+};
+
+const KAITO_LOOK: Look = { body: '#3d8f6a', hair: '#1d1d2a', kind: 'person' };
+
+/** ジムの無い町（さいはて諸島）。右上の建物は 家（入れない） */
+function makeIsleTown(t: { id: string; name: string; palette: Palette; townsfolk: TownSpec['townsfolk']; south?: { mapId: string; x: number; y: number }; north?: { mapId: string; x: number; y: number }; signNote: string }): MapDef[] {
+  const centerDoor = { x: 4, y: 4 };
+  const tiles = [...TOWN_TILES];
+  tiles[4] = 'T.##D##..,,..#####.T';
+  if (!t.north) tiles[0] = 'TTTTTTTTTTTTTTTTTTTT';
+  if (!t.south) tiles[15] = 'TTTTTTTTTTTTTTTTTTTT';
+  const spots: [number, number, Facing][] = [
+    [6, 8, 'right'],
+    [13, 11, 'left'],
+    [4, 13, 'up'],
+  ];
+  const npcs: NpcDef[] = t.townsfolk.map((f, i) => {
+    const sid = `${t.id}_folk${i}`;
+    WORLD_SCRIPTS[sid] = f.lines.map((say) => ({ who: f.name, say }));
+    const [x, y, facing] = spots[i];
+    return { id: sid, name: f.name, x, y, facing, look: f.look, talk: [{ script: sid }] };
+  });
+  WORLD_SCRIPTS[`visit_${t.id}`] = [{ setFlag: `visited_${t.id}` }];
+  const edge = (y: number, to: { mapId: string; x: number; y: number }, facing: Facing) => [
+    { x: 9, y, to: { mapId: to.mapId, x: to.x, y: to.y, facing } },
+    { x: 10, y, to: { mapId: to.mapId, x: to.x + 1, y: to.y, facing } },
+  ];
+  const town: MapDef = {
+    id: t.id,
+    name: t.name,
+    kind: 'town',
+    bgm: 'town',
+    palette: t.palette,
+    tiles: checkTiles(t.id, tiles),
+    warps: [{ x: centerDoor.x, y: centerDoor.y, to: { mapId: `${t.id}_center`, x: 4, y: 6, facing: 'up' } }, ...(t.south ? edge(15, t.south, 'down') : []), ...(t.north ? edge(0, t.north, 'up') : [])],
+    npcs,
+    objects: [{ id: `sign_${t.id}`, x: 15, y: 6, kind: 'sign', text: `${t.name}（さいはて諸島）\n左上：灯の家（回復・さいはての道具屋・渡し舟）\n${t.signNote}` }],
+    onEnter: [{ if: { notFlag: `visited_${t.id}` }, script: `visit_${t.id}` }],
+  };
+  return [town, centerMap(t.id, t.name, centerDoor, 'shop_isle')];
+}
+
+const ISLE_TOWNS: { id: string; name: string; palette: Palette; townsfolk: TownSpec['townsfolk']; signNote: string }[] = [
+  {
+    id: 'shiranami_port', name: 'しろなみ港', palette: PI.shiro, signNote: '北：ささなみ海岸',
+    townsfolk: [
+      { name: '港の船頭', look: person('#3a6a8a', '#d8d8d8'), lines: ['ようこそ、さいはて諸島へ。ここの 灯獣は 本島の どこにも いない 子ばかりだ。', '野生でも Lv80を こえる。全滅すると お金を 落とすから、灯の家で しっかり 準備していきな。'] },
+      { name: '旅の灯獣はかせ', look: person('#e0e0e0', '#7a7a7a'), lines: ['この諸島の 灯獣は 進化も おそい。2回進化する子は Lv84と Lv90、1回の子は Lv88 で 進化するよ。'] },
+      { name: '道具屋の 見習い', look: person('#f0a0c0', '#5a3a1a'), lines: ['灯の家の 道具屋で、とっても 高い「ローション」を 売ってるの。100,000ルクス！ なんでも チョンボに 使うと すごいことに なるんだって。'] },
+    ],
+  },
+  {
+    id: 'kokemusu_village', name: 'こけむす里', palette: PI.koke, signNote: '北：いにしえの樹海\n南：ささなみ海岸',
+    townsfolk: [
+      { name: '里の長老', look: person('#8a7a5a', '#e8e8e8'), lines: ['北の 樹海は 昼でも うす暗い。かげと めぶきの 灯獣が 多いから、ほむらや ひかりの 技が 役に立つぞ。'] },
+      { name: '苔の手入れをする人', look: person('#5a8a4a', '#2a2a1a'), lines: ['この里の 苔は、千年かけて 育ったんだ。ふみつけないでね。'] },
+    ],
+  },
+  {
+    id: 'tsurara_village', name: 'つらら村', palette: PI.tsurara, signNote: '北：こおりかぜ峠\n南：いにしえの樹海',
+    townsfolk: [
+      { name: '雪かきの青年', look: person('#4a6a9a', '#1a1a2a'), lines: ['峠の トレーナーは 本気だよ。Lv90を こえる 灯獣を 3匹も つれてる人もいる。'] },
+      { name: 'こたつの おばあさん', look: person('#c86a5a', '#e8e8e8'), lines: ['峠の 頂には 雷の 岩が 立っておる。いかずちの 灯獣には いわおで 立ちむかうんじゃ。'] },
+    ],
+  },
+  {
+    id: 'hoshifuru_hill', name: 'ほしふる丘', palette: PI.hoshi, signNote: '北：ながれぼし原\n南：こおりかぜ峠',
+    townsfolk: [
+      { name: '星読み', look: person('#5a5aa8', '#e8e0a0'), lines: ['北の 草原には 流れ星が よく落ちる。ひかりと いかずちの 灯獣が 光を あつめているんだ。'] },
+      { name: '天文台の子', look: person('#f0c84a', '#3a2a1a'), lines: ['さいはての灯台の 上には、島の 主が いるんだって。灯台の 灯は その主の 心臓なんだよ。'] },
+    ],
+  },
+  {
+    id: 'hate_capital', name: 'はてのみやこ', palette: PI.hate, signNote: '北：さいはての灯台\n南：ながれぼし原',
+    townsfolk: [
+      { name: '灯台守の 末えい', look: person('#4a3a6a', '#c8c8e8'), lines: ['灯台の 最上階に、ハテノヌシが 目をさました。Lv100。島の どの灯獣より 強い。', '灯台の 中にも 灯の泉が ある。のぼる前に 体力を もどしていくといい。'] },
+      { name: '都の 吟遊詩人', look: person('#c86ad0', '#f0d0a0'), lines: ['光と 闇、ふたつの 灯を まとう 主……。どちらか 片方の 属性だけでは 勝てないと 歌われているよ。'] },
+    ],
+  },
+];
+
+const ISLE_ROUTES: (Omit<RouteSpec, 'south' | 'north'>)[] = [
+  {
+    id: 'sasanami_coast', name: 'ささなみ海岸', seed: 12, palette: PI.shiro, min: 80, max: 84, chest: ['max_potion', 3], hidden: ['star_lantern', 1],
+    table: [['shiokoma', 16], ['biriuna', 14], ['awatama', 14], ['gotsufugu', 14], ['okitsudori', 10], ['namikake', 8], ['raija', 8], ['awamiko', 6], ['gansekifugu', 6], ['kaijinba', 2], ['raiunja', 2]],
+    sign: 'ささなみ海岸\n北：こけむす里\n南：しろなみ港',
+    trainers: [
+      { id: 'i1_umi', name: 'ウミ', title: '海の 灯守', look: person('#3a8ad0', '#1a3a6a'), party: [['namikake', 86], ['raija', 86], ['awamiko', 87]], intro: 'さいはての 海で きたえた 灯獣たちよ！', defeat: '本島の 灯守は 強いのね……。', after: 'ナミカケは Lv90で カイジンバに なるわ。' },
+      { id: 'i1_gou', name: 'ゴウ', title: '漁師', look: person('#4a6a8a', '#3a3a3a'), party: [['gansekifugu', 87], ['okitsudori', 87], ['raiunja', 88]], intro: '沖の 大物を 見せてやる！', defeat: '大物は きみの ほうだったか！', after: 'ライウンジャの 雷は、いわおで 受けとめるんだ。' },
+    ],
+  },
+  {
+    id: 'inishie_jukai', name: 'いにしえの樹海', seed: 13, palette: PI.koke, min: 83, max: 87, chest: ['max_potion', 3], hidden: ['revive_shard', 3],
+    table: [['kokebou', 16], ['homuramushi', 14], ['ishidango', 14], ['hiirosou', 14], ['nekkoja', 10], ['tsutamatoi', 8], ['homurayanma', 8], ['gandango', 6], ['hiirokagura', 6], ['jureishin', 2], ['gouenyanma', 2]],
+    sign: 'いにしえの樹海\n北：つらら村\n南：こけむす里',
+    trainers: [
+      { id: 'i2_kozue', name: 'コズエ', title: '森の 巫女', look: person('#4a8a3a', '#2a4a1a'), party: [['tsutamatoi', 89], ['hiirokagura', 89], ['nekkoja', 90]], intro: '樹海の 声を 聞かせてあげる。', defeat: '森が あなたを 認めたみたい。', after: 'ジュレイシンは 樹海の いちばん 古い 木の そばに いるわ。' },
+      { id: 'i2_tetsu', name: 'テツ', title: '虫とり名人', look: person('#e0b03a', '#3a2a1a'), party: [['homurayanma', 89], ['gandango', 90], ['gouenyanma', 91]], intro: '樹海の 虫は 本島の 虫とは わけが ちがうぞ！', defeat: 'ま、まいった……！', after: 'ゴウエンヤンマは しおで 消してやるのが いちばんだ。' },
+      { id: 'i2_kage', name: 'カゲ', title: '静夜団の のこり', look: grunt, party: [['yominokiba', 90], ['tsutamatoi', 90], ['yomibachi', 91]], intro: 'ヨル様が ゆるしても、わたしは まだ 夜が 好きなのさ！', defeat: '……夜明けも、悪くないか。', after: 'ヨル様には ないしょに しておいてくれ。' },
+    ],
+  },
+  {
+    id: 'koorikaze_pass', name: 'こおりかぜ峠', seed: 14, palette: PI.tsurara, min: 86, max: 90, chest: ['max_potion', 4], hidden: ['star_lantern', 2],
+    table: [['kirarin', 16], ['yogarasu', 14], ['honoguma', 14], ['raiseki', 10], ['magumamochi', 10], ['hyougan', 10], ['yomigarasu', 8], ['kaenguma', 8], ['gousetsuou', 4]],
+    sign: 'こおりかぜ峠\n北：ほしふる丘\n南：つらら村',
+    trainers: [
+      { id: 'i3_fubuki', name: 'フブキ', title: '山の 灯守', look: person('#c8d8e8', '#3a4a6a'), party: [['hyougan', 92], ['yomigarasu', 92], ['gousetsuou', 93]], intro: '峠の 吹雪に たえられるかな？', defeat: '吹雪が やんだ……！', after: 'ゴウセツオウは ほむらにも いかずちにも 強い。めぶきか しおで 攻めて。' },
+      { id: 'i3_homura', name: 'ホムラ', title: '火の 修行者', look: person('#d0402a', '#2a1a1a'), party: [['kaenguma', 92], ['magumamochi', 93], ['raiseki', 93]], intro: '雪の 峠でこそ 炎は 強くなる！', defeat: '炎が……消えた……。', after: 'カエングマは 峠の ほら穴で 生まれるんだ。' },
+      { id: 'i3_ryou', name: 'リョウ', title: '登山家', look: person('#6a8a4a', '#1a1a1a'), party: [['gousetsuou', 93], ['yomigarasu', 93], ['kaenguma', 94]], intro: 'ここまで のぼってきた 灯守に 敬意を！ 勝負だ！', defeat: '頂上は きみに ゆずろう。', after: '北の ほしふる丘で 一息 つくといい。' },
+    ],
+  },
+  {
+    id: 'nagareboshi_field', name: 'ながれぼし原', seed: 15, palette: PI.hoshi, min: 89, max: 93, chest: ['max_potion', 4], hidden: ['star_lantern', 2],
+    table: [['kirahina', 16], ['pachirin', 14], ['tsumujihebi', 14], ['kiramedaka', 14], ['ryuuseichou', 10], ['raimeisei', 8], ['tatsumakija', 8], ['seikougyo', 8], ['seiranou', 4]],
+    sign: 'ながれぼし原\n北：はてのみやこ\n南：ほしふる丘',
+    trainers: [
+      { id: 'i4_sora', name: 'ソラ', title: '星の 灯守', look: person('#5a5aa8', '#f0e0a0'), party: [['ryuuseichou', 95], ['raimeisei', 95], ['seikougyo', 96]], intro: '流れ星の 力、受けてみて！', defeat: '願いごとを する ひまも なかった……。', after: 'セイランオウは 星の 多い 夜に 空を 飛ぶの。' },
+      { id: 'i4_arashi', name: 'アラシ', title: '風の 剣士', look: person('#3a8a7a', '#1a1a1a'), party: [['tatsumakija', 95], ['seiranou', 96], ['kaijinba', 96]], intro: '風より 速く 斬る！', defeat: '見事な 太刀すじ……いや、灯すじだ。', after: 'はてのみやこの 北に、さいはての灯台が ある。' },
+      { id: 'i4_yoru', name: 'ヨル', title: '旅の 灯守', look: { body: '#4a3a6a', hair: '#c8c8e8', kind: 'person' }, party: [['yominokiba', 95], ['yominokoura', 96], ['tokoyonoyami', 97]], intro: 'あなたを 追いかけて ここまで 来たの。今度は 灯守として 勝負よ！', defeat: '……やっぱり あなたの 灯は まぶしいわね。', after: 'トコヨノヤミも 今は わたしの なかま。夜は こわいだけの ものじゃ ないのよ。' },
+    ],
+  },
+];
+
+// 町と道をつなぐ（港 → 道 → 里 → … → みやこ → 灯台）
+ISLE_TOWNS.forEach((t, i) => {
+  const route = ISLE_ROUTES[i];
+  const prevRoute = ISLE_ROUTES[i - 1];
+  WORLD_MAPS.push(
+    ...makeIsleTown({
+      ...t,
+      south: prevRoute ? { mapId: prevRoute.id, x: 9, y: 1 } : undefined,
+      north: route ? { mapId: route.id, x: 9, y: 28 } : { mapId: 'saihate_lighthouse', x: 9, y: 28 },
+    }),
+  );
+  if (route) WORLD_MAPS.push(makeRoute({ ...route, south: { mapId: t.id, x: 9, y: 1 }, north: { mapId: ISLE_TOWNS[i + 1].id, x: 9, y: 14 } }));
+});
+// さいはて諸島の トレーナーは 本気（AI の 賢さ 0.92）
+for (const tr of WORLD_TRAINERS) if (/^i\d_/.test(tr.id)) tr.smart = 0.92;
+
+WORLD_MAPS.push(
+  makeRoute({
+    id: 'saihate_lighthouse', name: 'さいはての灯台', seed: 16, palette: PI.tower, min: 92, max: 96, kind: 'dungeon', bgm: 'forest', wall: 'R',
+    chest: ['star_lantern', 3], hidden: ['max_potion', 5],
+    table: [['yukiten', 14], ['haniwan', 14], ['yamikoura', 14], ['kuromata', 10], ['miakashi', 10], ['ginten', 10], ['haniwaou', 8], ['yominokoura', 8], ['ougonten', 4]],
+    sign: 'さいはての灯台\nこの上に、さいはて諸島の 主が いる。',
+    south: { mapId: 'hate_capital', x: 9, y: 1 },
+    north: { mapId: 'saihate_top', x: 4, y: 8 },
+    trainers: [
+      { id: 'i5_akari', name: 'アカリ', title: '灯台守', look: person('#f0c84a', '#5a3a1a'), party: [['ginten', 97], ['miakashi', 97], ['haniwaou', 98]], intro: '灯台の 灯を 守るのが わたしの 役目！', defeat: 'あなたなら 主に 会っても いいわ。', after: '最上階の 手前に 灯の泉が あるわ。' },
+      { id: 'i5_kuro', name: 'クロ', title: '旅の 灯守', look: grunt, party: [['kuromata', 97], ['yominokoura', 98], ['gouenyanma', 98]], intro: '静夜団は やめた。今は 強さを さがして 旅を している！', defeat: 'まだまだ 修行が たりないか……。', after: 'ハテノヌシは ひかりと かげ。ほむら・めぶきは いまひとつ だぞ。' },
+      { id: 'i5_rival', name: 'カイト', title: 'ライバル', look: KAITO_LOOK, party: [['ougonten', 98], ['seiranou', 98], ['raiunja', 99], ['jureishin', 99]], intro: 'やっぱり ここで 会ったな！ 最上階の 前に、おれと 勝負だ！', defeat: 'くっ……でも、なんだか うれしいよ。行ってこい！', after: 'ハテノヌシに 勝ったら、また いっしょに 旅しような。' },
+    ],
+  }),
+);
+for (const tr of WORLD_TRAINERS) if (/^i5_/.test(tr.id)) tr.smart = 0.95;
+
+WORLD_MAPS.push({
+  id: 'saihate_top',
+  name: 'さいはての灯台 最上階',
+  kind: 'dungeon',
+  bgm: 'forest',
+  palette: PI.tower,
+  tiles: checkTiles('saihate_top', ['RRRRRRRRR', 'RRR...RRR', 'RR.....RR', 'RR.....RR', 'R.......R', 'R.......R', 'R.......R', 'R.....P.R', 'R.......R', 'RRRR,RRRR']),
+  warps: [{ x: 4, y: 9, to: { mapId: 'saihate_lighthouse', x: 9, y: 1, facing: 'down' } }],
+  npcs: [
+    { id: 'isle_boss', name: 'ハテノヌシ', x: 4, y: 2, facing: 'down', look: { body: '#f0e8ff', hair: '#2a1a4a', kind: 'boss', speciesId: 'hatenonushi' }, showIf: { notFlag: 'isle_boss_down' }, talk: [{ script: 'isle_boss' }] },
+    { id: 'isle_boss_after', name: '灯台の 灯', x: 4, y: 2, facing: 'down', look: { body: '#ffd87a', hair: '#ffd87a', kind: 'monster', speciesId: 'miakashi' }, showIf: { flag: 'isle_boss_down' }, talk: [{ script: 'isle_boss_after' }] },
+  ],
+  objects: [{ id: 'top_spring', x: 6, y: 7, kind: 'heal', text: '灯台の 灯が 分けてくれた 光の泉。なかまの灯が ともった。' }],
+});
+
+// 2回目の トコヨノヤミ（黒霞の洞窟の最奥。きらめく灯章が10個そろうと 目ざめる）
+const depths = WORLD_MAPS.find((m) => m.id === 'kurogasumi_depths')!;
+depths.npcs.push({
+  id: 'final_boss2', name: 'トコヨノヤミ', x: 4, y: 2, facing: 'down', look: { body: '#1a1424', hair: '#c03af0', kind: 'boss', speciesId: 'tokoyonoyami' },
+  showIf: { all: [{ flag: 'final_boss_down' }, ...GYMS.map((g) => ({ flag: `badge2_${g.n}` })), { notFlag: 'final_boss2_down' }] },
+  talk: [{ script: 'final_boss2' }],
+});
+
+Object.assign(WORLD_SCRIPTS, {
+  final_boss2: [
+    { say: 'きらめく灯章の 光に よびよせられて、黒霞が ふたたび うずを まいた……！' },
+    { who: 'トコヨノヤミ', say: '……ヒカリ……マダ……ケセヌ……。' },
+    {
+      boss: { speciesId: 'tokoyonoyami', level: TOKOYO2_LEVEL },
+      win: [
+        { setFlag: 'final_boss2_down' },
+        { setFlag: ISLE_OPEN_FLAG },
+        { say: '最後の 黒霞が 晴れた。洞窟の 奥から、遠い 海の 向こうへ 光の すじが のびていく……。' },
+        { who: 'ヨル', say: '……あの光の 先は「さいはて諸島」。トコヨノヤミが ずっと ふさいでいた 海の 道よ。' },
+        { who: 'ヨル', say: '灯の家の 渡し守に たのめば、もう 舟を 出せるはず。本島には いない 灯獣が たくさん いるわ。' },
+        { say: '（灯の渡し舟で「しろなみ港」へ 行けるように なった！）' },
+      ],
+    },
+  ],
+  isle_boss: [
+    { say: '灯台の 灯が はげしく ゆらめき、光と 闇の 大蛇が 姿を あらわした……！' },
+    { who: 'ハテノヌシ', say: '……トコヨノヤミヲ 二度 シズメタ 灯守カ。ソノ 灯、タメサセテ モラウ……。' },
+    {
+      boss: { speciesId: 'hatenonushi', level: ISLE_BOSS_LEVEL },
+      win: [
+        { setFlag: 'isle_boss_down' },
+        { say: 'ハテノヌシは 静かに 光の 粒に なり、灯台の 灯に とけこんだ。' },
+        { say: 'さいはての灯台が、本島まで とどくほど 明るく かがやきだした！' },
+        { ending: 'isle' },
+      ],
+    },
+  ],
+  isle_boss_after: [{ say: '灯台の 灯が、あたたかく ゆれている。ハテノヌシの 気配を かすかに 感じる……。' }],
+  shop_isle: [{ shop: 'isle' }],
+});
+
 /** 町の灯の家の外（渡し舟で着く場所） */
 export function townArrival(townId: string): { mapId: string; x: number; y: number } {
   if (townId === 'village') return { mapId: 'village', x: 13, y: 5 };
@@ -757,4 +987,11 @@ export function townArrival(townId: string): { mapId: string; x: number; y: numb
 }
 
 /** 渡し舟で行ける町（ジム番号の順） */
-export const TRAVEL_TOWNS = [{ id: 'village', name: 'ひだまり村' }, ...TOWNS.map((t) => ({ id: t.id, name: t.name }))];
+export const TRAVEL_TOWNS: { id: string; name: string; unlock?: string }[] = [
+  { id: 'village', name: 'ひだまり村' },
+  ...TOWNS.map((t) => ({ id: t.id, name: t.name })),
+  // さいはて諸島：港は 2回目のトコヨノヤミを 倒すと 行ける。ほかの町は 一度 行ってから
+  ...ISLE_TOWNS.map((t, i) => ({ id: t.id, name: `${t.name}（さいはて諸島）`, unlock: i === 0 ? ISLE_OPEN_FLAG : undefined })),
+];
+/** 本島の町の数（ジムのある町） */
+export const MAIN_TOWN_COUNT = 1 + TOWNS.length;

@@ -73,11 +73,14 @@ const list: MoveDef[] = [
   { id: 'sunrise', name: 'ひのでのひかり', description: '夜明けのようなまぶしい光をあびせる。', element: 'shine', category: 'special', power: 110, accuracy: 85, pp: 5, target: 'enemy' },
   { id: 'night_claw', name: 'よるのツメ', description: '闇にまぎれて切りさく。急所に当たりやすい。', element: 'shade', category: 'physical', power: 90, accuracy: 100, pp: 15, target: 'enemy', effect: { highCrit: true } },
   { id: 'abyss', name: 'しんえんのやみ', description: '底なしの闇に引きずりこむ。', element: 'shade', category: 'special', power: 110, accuracy: 85, pp: 5, target: 'enemy', effect: { status: 'mist', chance: 20 } },
+  // ボッキー専用（2026-11-06 本人決定）：使ったターンは 動けず 力をためる → 次のターンに 威力300・命中50%
+  { id: 'gaman', name: 'がまん', description: 'じっと がまんして 力を ためる。使ったターンは 動けず、次のターンに 威力300で こうげきする。命中率は 50%。ボッキーだけが使える。', element: 'neutral', category: 'physical', power: 300, accuracy: 50, pp: 5, target: 'enemy', effect: { charge: true } },
   // 使える技が無い時の最後の手段
   { id: 'struggle', name: 'わるあがき', description: '技を使い切った時の最後の手段。自分も少し傷つく。', element: 'neutral', category: 'physical', power: 40, accuracy: 101, pp: 1, target: 'enemy', effect: { recoil: 0.25 } },
   // ボス専用
   { id: 'black_haze', name: 'くろがすみ', description: '黒霞を吐き出す。どくにすることがある。', element: 'shade', category: 'special', power: 70, accuracy: 100, pp: 15, target: 'enemy', effect: { status: 'poison', chance: 30 } },
   { id: 'tokoyo_night', name: 'とこよのよる', description: '明けることのない夜を よびよせる。', element: 'shade', category: 'special', power: 120, accuracy: 90, pp: 5, target: 'enemy', effect: { status: 'mist', chance: 30 } },
+  { id: 'hate_no_hikari', name: 'さいはてのひかり', description: '光と 闇が まざった 灯を はなつ。かすみに つつむことがある。', element: 'shine', category: 'special', power: 130, accuracy: 90, pp: 5, target: 'enemy', effect: { status: 'mist', chance: 30 } },
   { id: 'firefly_storm', name: 'ほたるあらし', description: '無数の光の粒が吹き荒れる。', element: 'shine', category: 'special', power: 75, accuracy: 95, pp: 10, target: 'enemy' },
 ];
 
